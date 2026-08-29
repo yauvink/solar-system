@@ -12,6 +12,7 @@ dist
 dist-ssr
 *.local
 *.exr
+*.tif
 
 # Editor directories and files
 .vscode/*

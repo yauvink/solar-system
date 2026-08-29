@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   ClampToEdgeWrapping,
+  NoColorSpace,
   Quaternion,
   RepeatWrapping,
   SRGBColorSpace,
@@ -9,13 +10,28 @@ import {
   Vector3,
   type Group,
   type Mesh,
+  type Texture,
 } from 'three'
 import { MOON_BY_ID, type MoonId } from '../astronomy/bodies.ts'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
 import { BodyLabel } from './BodyLabel.tsx'
 import { createSatelliteTexture } from './createBodyTexture.ts'
 
-const MOON_MAP_URL = `${import.meta.env.BASE_URL}textures/moon/color.jpg`
+const MOON_COLOR_URL = `${import.meta.env.BASE_URL}textures/moon/color.webp`
+const MOON_HEIGHT_URL = `${import.meta.env.BASE_URL}textures/moon/displacement.webp`
+
+type MoonMaps = {
+  color: Texture
+  height: Texture
+}
+
+function prepareMoonMap(texture: Texture, color: boolean): Texture {
+  texture.wrapS = RepeatWrapping
+  texture.wrapT = ClampToEdgeWrapping
+  texture.anisotropy = 8
+  texture.colorSpace = color ? SRGBColorSpace : NoColorSpace
+  return texture
+}
 
 type SatelliteProps = {
   id: MoonId
@@ -38,22 +54,22 @@ export function Satellite({ id, store, radius }: SatelliteProps) {
   const groupRef = useRef<Group>(null)
   const spinRef = useRef<Mesh>(null)
   const fallback = useMemo(() => createSatelliteTexture(id), [id])
-  const nasaMoon = useMemo(() => {
+  const nasaMoon = useMemo<MoonMaps | null>(() => {
     if (id !== 'moon') return null
-    const map = new TextureLoader().load(MOON_MAP_URL)
-    map.wrapS = RepeatWrapping
-    map.wrapT = ClampToEdgeWrapping
-    map.colorSpace = SRGBColorSpace
-    map.anisotropy = 8
-    return map
+    const loader = new TextureLoader()
+    return {
+      color: prepareMoonMap(loader.load(MOON_COLOR_URL), true),
+      height: prepareMoonMap(loader.load(MOON_HEIGHT_URL), false),
+    }
   }, [id])
-  const texture = nasaMoon ?? fallback
-  const segments = id === 'moon' ? 64 : radius < 0.04 ? 16 : 32
+  const texture = nasaMoon?.color ?? fallback
+  const segments = id === 'moon' ? 128 : radius < 0.04 ? 16 : 32
 
   useLayoutEffect(() => {
     return () => {
       fallback.dispose()
-      nasaMoon?.dispose()
+      nasaMoon?.color.dispose()
+      nasaMoon?.height.dispose()
     }
   }, [fallback, nasaMoon])
 
@@ -77,11 +93,16 @@ export function Satellite({ id, store, radius }: SatelliteProps) {
           <sphereGeometry args={[1, segments, segments]} />
           <meshStandardMaterial
             map={texture}
-            roughness={id === 'moon' ? 0.92 : 1}
+            bumpMap={nasaMoon?.height}
+            bumpScale={nasaMoon ? 2.4 : 0}
+            displacementMap={nasaMoon?.height}
+            displacementScale={nasaMoon ? 0.032 : 0}
+            displacementBias={nasaMoon ? -0.013 : 0}
+            roughness={id === 'moon' ? 0.94 : 1}
             metalness={0}
-            emissiveMap={nasaMoon ?? undefined}
+            emissiveMap={nasaMoon?.color}
             emissive={nasaMoon ? '#ffffff' : '#000000'}
-            emissiveIntensity={nasaMoon ? 0.22 : 0}
+            emissiveIntensity={nasaMoon ? 0.2 : 0}
           />
         </mesh>
       </group>

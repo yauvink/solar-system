@@ -1,7 +1,13 @@
-NASA Moon color map (public domain). Credit NASA / GSFC SVS.
+NASA Moon maps (public domain). Credit NASA / GSFC SVS / LROC / LOLA.
 
-color.jpg  CGI Moon Kit LROC WAC color 2048×1024
-           https://svs.gsfc.nasa.gov/4720
-           NASA/Goddard Space Flight Center Scientific Visualization Studio
-           Lunar Reconnaissance Orbiter Camera, Hapke-normalized mosaic
-           Equirectangular, centered on 0° longitude (near side)
+color.webp          LROC WAC 2019 color mosaic, 2048×1024
+                    Source: lroc_color_poles_2k.tif
+                    Equirectangular, centered on 0° longitude (near side)
+
+displacement.webp   LOLA / CGI Moon Kit height, 1024×512
+                    Source: unsigned preview of the 0°-centered displacement map
+                    White = high, black = low, relative to 1737.4 km radius
+
+https://svs.gsfc.nasa.gov/4720
+NASA/Goddard Space Flight Center Scientific Visualization Studio
+Lunar Reconnaissance Orbiter Camera; Lunar Orbiter Laser Altimeter
