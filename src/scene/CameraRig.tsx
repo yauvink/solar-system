@@ -104,10 +104,27 @@ export function writeFocusPose(
   }
 
   const len = Math.hypot(pos[0], pos[1], pos[2]) || 1
+  const ax = pos[0] / len
+  const az = pos[2] / len
+  if (focus === 'earth') {
+    // Quarter-phase: stand off the Sun–Earth line so day and night share the disk.
+    const phase = 1.15
+    const dist = radius * 10
+    const sx = az
+    const sz = -ax
+    cameraOut.set(
+      pos[0] + (-Math.cos(phase) * ax + Math.sin(phase) * sx) * dist,
+      pos[1] + radius * 4,
+      pos[2] + (-Math.cos(phase) * az + Math.sin(phase) * sz) * dist,
+    )
+    biasFocusCamera(cameraOut, targetOut)
+    return
+  }
+
   cameraOut.set(
-    pos[0] + (pos[0] / len) * radius * 10,
+    pos[0] + ax * radius * 10,
     pos[1] + radius * 5,
-    pos[2] + (pos[2] / len) * radius * 10,
+    pos[2] + az * radius * 10,
   )
   biasFocusCamera(cameraOut, targetOut)
 }

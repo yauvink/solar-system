@@ -240,6 +240,14 @@ export function Controls({
 
   return (
     <div className="hud">
+      <img
+        className="hud-app-logo"
+        src={`${import.meta.env.BASE_URL}icons/logo-128.png`}
+        width={40}
+        height={40}
+        alt=""
+        draggable={false}
+      />
       <ObjectFacts focus={focus} />
       {narrow && (openPanels.scale || openPanels.objects) ? (
         <button

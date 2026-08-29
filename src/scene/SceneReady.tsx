@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useProgress } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
+import { loaderStatus, writeBootLoader } from '../bootLoader.ts'
 
 type SceneReadyProps = {
   onReady: () => void
@@ -10,11 +11,16 @@ const SETTLE_FRAMES = 24
 const FAILSAFE_MS = 12_000
 
 export function SceneReady({ onReady }: SceneReadyProps) {
-  const { active, loaded, total } = useProgress()
+  const { active, loaded, total, progress, item } = useProgress()
   const frames = useRef(0)
   const done = useRef(false)
   const onReadyRef = useRef(onReady)
   onReadyRef.current = onReady
+
+  useEffect(() => {
+    const status = loaderStatus(progress, item, loaded, total, active)
+    writeBootLoader(status.percent, status.label)
+  }, [active, item, loaded, progress, total])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {

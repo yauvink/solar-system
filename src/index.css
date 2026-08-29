@@ -151,6 +151,12 @@ body,
   border-radius: 12px 0 0 12px;
 }
 
+@media (min-width: 841px) {
+  .hud-dock-right .hud-dock-tab {
+    margin-top: 48px;
+  }
+}
+
 .hud-dock-icon {
   width: 16px;
   height: 16px;
@@ -232,6 +238,17 @@ body,
 
 .hud-scale-panel .hud-check {
   margin-top: 6px;
+}
+
+.hud-app-logo {
+  position: absolute;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 .hud-object-facts {
@@ -721,7 +738,12 @@ body,
 
 @media (max-width: 840px) {
   .hud {
-    --time-bar: calc(118px + env(safe-area-inset-bottom, 0px));
+    --time-bar: calc(140px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hud-app-logo {
+    width: 34px;
+    height: 34px;
   }
 
   .hud-stack-left {
@@ -825,8 +847,7 @@ body,
   }
 
   .hud-dock-time .hud-datetime-field input,
-  .hud-dock-time .hud-now,
-  .hud-dock-time .hud-scrub button {
+  .hud-dock-time .hud-now {
     min-height: 40px;
     height: 40px;
   }
@@ -844,7 +865,13 @@ body,
   }
 
   .hud-dock-time .hud-scrub button {
+    min-width: 0;
+    min-height: 52px;
+    height: 52px;
     padding: 0;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    font-size: 16px;
   }
 
   .hud-scale-panel,
@@ -895,7 +922,7 @@ body,
   display: grid;
   place-items: center;
   background:
-    radial-gradient(ellipse at 50% 40%, #1a2744 0%, #0a1020 46%, #02040a 100%);
+    radial-gradient(ellipse at 50% 40%, #0a0d12 0%, #040508 48%, #000000 100%);
   color: var(--text);
   pointer-events: none;
   opacity: 1;
@@ -4762,6 +4789,13 @@ body,
   text-transform: uppercase;
   color: var(--accent);
   text-shadow: 0 0 12px rgba(240, 195, 106, 0.35);
+}
+
+.space-loader-percent {
+  margin: 8px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  color: var(--muted);
 }
 
 @keyframes space-spin {

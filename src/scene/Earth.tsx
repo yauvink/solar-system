@@ -1,14 +1,18 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   AdditiveBlending,
   ClampToEdgeWrapping,
+  Matrix4,
   Quaternion,
   RepeatWrapping,
+  NoColorSpace,
+  ShaderMaterial,
   SRGBColorSpace,
   TextureLoader,
   Vector3,
   type Group,
+  type Mesh,
   type Texture,
 } from 'three'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
@@ -48,40 +52,17 @@ function latLonOnSphere(lat: number, lon: number, radius: number): Vector3 {
   return new Vector3(-Math.cos(phi) * ring * radius, Math.cos(theta) * radius, Math.sin(phi) * ring * radius)
 }
 
-const DAY_URL = `${import.meta.env.BASE_URL}textures/earth/day.png`
-const NIGHT_URL = `${import.meta.env.BASE_URL}textures/earth/night.png`
+const DAY_URL = `${import.meta.env.BASE_URL}textures/earth/bluemarble-2048.webp`
+const NIGHT_URL = `${import.meta.env.BASE_URL}textures/earth/earthatnight-2048.webp`
 const CLOUDS_URL = `${import.meta.env.BASE_URL}textures/earth/clouds.jpg`
+
+const SHOW_CLOUDS_LAYER = true
 
 function prepareMap(texture: Texture, colorSpace = true): Texture {
   texture.wrapS = RepeatWrapping
   texture.wrapT = ClampToEdgeWrapping
   texture.anisotropy = 8
-  if (colorSpace) texture.colorSpace = SRGBColorSpace
-  texture.needsUpdate = true
-  return texture
-}
-
-/** Keep city lights, drop the dark land/ocean fill so additive blending stays clean. */
-function crushNightLights(texture: Texture): Texture {
-  const image = texture.image as CanvasImageSource & { width: number; height: number }
-  const canvas = document.createElement('canvas')
-  canvas.width = image.width
-  canvas.height = image.height
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return texture
-  ctx.drawImage(image, 0, 0)
-  const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  const data = pixels.data
-  for (let i = 0; i < data.length; i += 4) {
-    const luma = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11
-    if (luma < 36) {
-      data[i] = 0
-      data[i + 1] = 0
-      data[i + 2] = 0
-    }
-  }
-  ctx.putImageData(pixels, 0, 0)
-  texture.image = canvas
+  texture.colorSpace = colorSpace ? SRGBColorSpace : NoColorSpace
   texture.needsUpdate = true
   return texture
 }
@@ -105,8 +86,9 @@ function useNasaEarthMaps(): EarthMaps | null {
           return
         }
         setMaps({
-          day: prepareMap(day),
-          night: crushNightLights(prepareMap(night)),
+          // Custom terminator shader outputs display-referred color (toneMapped: false).
+          day: prepareMap(day, false),
+          night: prepareMap(night, false),
           clouds: prepareMap(clouds, false),
         })
       })
@@ -128,6 +110,80 @@ function useNasaEarthMaps(): EarthMaps | null {
   }, [maps])
 
   return maps
+}
+
+const sunDirWorld = new Vector3()
+const worldInverse = new Matrix4()
+
+const DAY_NIGHT_VERT = /* glsl */ `
+varying vec2 vUv;
+varying vec3 vObjectNormal;
+
+void main() {
+  vUv = uv;
+  vObjectNormal = normal;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+`
+
+const DAY_NIGHT_FRAG = /* glsl */ `
+uniform sampler2D dayMap;
+uniform sampler2D nightMap;
+uniform vec3 sunDirection;
+varying vec2 vUv;
+varying vec3 vObjectNormal;
+
+void main() {
+  vec3 day = texture2D(dayMap, vUv).rgb * 1.45;
+  vec3 night = texture2D(nightMap, vUv).rgb * 3.2 + vec3(0.018, 0.024, 0.05);
+  float light = dot(normalize(vObjectNormal), normalize(sunDirection));
+  float dayFactor = smoothstep(-0.05, 0.1, light);
+  vec3 color = mix(night, day, dayFactor);
+  float twilight = exp(-light * light * 22.0);
+  color += vec3(0.26, 0.11, 0.04) * twilight * 0.2;
+  gl_FragColor = vec4(color, 1.0);
+}
+`
+
+function EarthDayNightMaterial({
+  day,
+  night,
+  store,
+  meshRef,
+}: {
+  day: Texture
+  night: Texture
+  store: EphemerisStore
+  meshRef: RefObject<Mesh | null>
+}) {
+  const material = useMemo(() => {
+    return new ShaderMaterial({
+      uniforms: {
+        dayMap: { value: day },
+        nightMap: { value: night },
+        sunDirection: { value: new Vector3(1, 0, 0) },
+      },
+      vertexShader: DAY_NIGHT_VERT,
+      fragmentShader: DAY_NIGHT_FRAG,
+      toneMapped: false,
+    })
+  }, [day, night])
+
+  useFrame(() => {
+    const mesh = meshRef.current
+    if (!mesh) return
+    const earth = store.positions.earth
+    sunDirWorld.set(-earth[0], -earth[1], -earth[2]).normalize()
+    mesh.updateWorldMatrix(true, false)
+    worldInverse.copy(mesh.matrixWorld).invert()
+    material.uniforms.sunDirection.value
+      .copy(sunDirWorld)
+      .transformDirection(worldInverse)
+  })
+
+  useLayoutEffect(() => () => material.dispose(), [material])
+
+  return <primitive object={material} attach="material" />
 }
 
 function YouAreHere({ lat, lon }: GeoLocation) {
@@ -170,6 +226,7 @@ function YouAreHere({ lat, lon }: GeoLocation) {
 export function Earth({ store, radius, userGeo }: EarthProps) {
   const groupRef = useRef<Group>(null)
   const spinRef = useRef<Group>(null)
+  const meshRef = useRef<Mesh>(null)
   const fallback = useMemo(() => createEarthTexture(), [])
   const maps = useNasaEarthMaps()
 
@@ -196,16 +253,14 @@ export function Earth({ store, radius, userGeo }: EarthProps) {
     <>
       <group ref={groupRef} scale={radius}>
         <group ref={spinRef}>
-          <mesh>
-            <sphereGeometry args={[1, 64, 64]} />
+          <mesh ref={meshRef}>
+            <sphereGeometry args={[1, 96, 96]} />
             {maps ? (
-              <meshStandardMaterial
-                map={maps.day}
-                emissiveMap={maps.day}
-                emissive="#ffffff"
-                emissiveIntensity={0.42}
-                roughness={0.55}
-                metalness={0.02}
+              <EarthDayNightMaterial
+                day={maps.day}
+                night={maps.night}
+                store={store}
+                meshRef={meshRef}
               />
             ) : (
               <meshStandardMaterial
@@ -218,19 +273,8 @@ export function Earth({ store, radius, userGeo }: EarthProps) {
               />
             )}
           </mesh>
-          {maps ? (
-            <mesh>
-              <sphereGeometry args={[1.004, 64, 64]} />
-              <meshBasicMaterial
-                map={maps.night}
-                blending={AdditiveBlending}
-                transparent
-                depthWrite={false}
-              />
-            </mesh>
-          ) : null}
           {userGeo ? <YouAreHere lat={userGeo.lat} lon={userGeo.lon} /> : null}
-          {maps ? (
+          {SHOW_CLOUDS_LAYER && maps ? (
             <mesh scale={1.018}>
               <sphereGeometry args={[1, 64, 64]} />
               <meshStandardMaterial

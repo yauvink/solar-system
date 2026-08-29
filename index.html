@@ -2,13 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="./favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/png" sizes="16x16" href="./icons/favicon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="./icons/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="./icons/favicon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="./icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="./icons/icon-512.png" />
+    <link rel="manifest" href="./site.webmanifest" />
+    <meta name="theme-color" content="#02040a" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Solar System</title>
     <link rel="stylesheet" href="/src/index.css" />
   </head>
   <body>
-    <div id="space-loader" class="space-loader" role="status" aria-live="polite" aria-label="Loading the solar system">
+    <div id="space-loader" class="space-loader" role="status" aria-live="polite" aria-label="Preparing the scene">
       <div class="space-loader-inner">
         <div class="space-loader-stars" aria-hidden="true"></div>
         <div class="space-loader-stage" aria-hidden="true">
@@ -21,7 +29,8 @@
             <div class="space-loader-moon"></div>
           </div>
         </div>
-        <p class="space-loader-copy">Charting the solar system</p>
+        <p class="space-loader-copy" id="space-loader-copy">Preparing the scene</p>
+        <p class="space-loader-percent" id="space-loader-percent">0%</p>
       </div>
     </div>
     <div id="root"></div>

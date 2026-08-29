@@ -1,13 +1,13 @@
 NASA Earth textures (public domain). Credit NASA / GSFC.
 
-day.png    Blue Marble 2048x1024
-           https://svs.gsfc.nasa.gov/2915
-           NASA/Goddard Space Flight Center Scientific Visualization Studio
+bluemarble-2048.webp     Blue Marble 2048×1024
+                         https://svs.gsfc.nasa.gov/2915
+                         NASA/Goddard Space Flight Center Scientific Visualization Studio
 
-night.png  Earth at Night 2048x1024
-           https://svs.gsfc.nasa.gov/2916
-           NASA/GSFC, DMSP OLS city lights
+earthatnight-2048.webp   Earth at Night 2048×1024
+                         https://svs.gsfc.nasa.gov/2916
+                         NASA/GSFC, DMSP OLS city lights
 
-clouds.jpg Blue Marble cloud composite 2048x1024
-           https://visibleearth.nasa.gov/images/57747/blue-marble-clouds
-           NASA Earth Observatory
+clouds.jpg               Blue Marble cloud composite 2048×1024
+                         https://visibleearth.nasa.gov/images/57747/blue-marble-clouds
+                         NASA Earth Observatory
