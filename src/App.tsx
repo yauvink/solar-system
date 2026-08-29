@@ -16,7 +16,8 @@ import {
 import { isPerseidCrossing } from './astronomy/perseids.ts'
 import { SolarSystem } from './scene/SolarSystem.tsx'
 import { SceneReady } from './scene/SceneReady.tsx'
-import { writeFocusPose, type FocusId } from './scene/CameraRig.tsx'
+import { type FocusId } from './scene/CameraRig.tsx'
+import { writeStartPose } from './scene/startPose.ts'
 import type { GeoLocation } from './scene/Earth.tsx'
 import { Vector3 } from 'three'
 import { Controls, type GeoStatus } from './ui/Controls.tsx'
@@ -89,12 +90,12 @@ export default function App() {
   const startCamera = useMemo(() => {
     const camera = new Vector3()
     const target = new Vector3()
-    writeFocusPose('earth', store, radii, camera, target)
+    writeStartPose(store, camera, target)
     return {
       position: camera.toArray() as [number, number, number],
       target: target.toArray() as [number, number, number],
     }
-  }, [radii, store])
+  }, [store])
   const [focusNonce, setFocusNonce] = useState(0)
   const [showAxes, setShowAxes] = useState(() => readStoredFlag(SHOW_AXES_KEY, true))
   const [showDegrees, setShowDegrees] = useState(() => {

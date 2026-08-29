@@ -465,6 +465,35 @@ export function Controls({
         >
           <p className="hud-kicker">Objects</p>
             <nav className="body-list" aria-label="System bodies">
+              <button
+                type="button"
+                className={`body-list-overview ${focus === "reset" ? "is-active" : ""}`.trim()}
+                onClick={() => {
+                  onFocus("reset");
+                  if (narrow)
+                    setOpenPanels((current) => ({
+                      ...current,
+                      objects: false,
+                    }));
+                }}
+              >
+                Solar system overview
+              </button>
+              <button
+                type="button"
+                className={`body-list-locate ${geoStatus === "ready" ? "is-active" : ""}`.trim()}
+                disabled={geoStatus === "pending"}
+                onClick={onWhereAmI}
+              >
+                <span className="body-swatch body-swatch-locate" aria-hidden />
+                {geoStatus === "pending"
+                  ? "Locating…"
+                  : geoStatus === "denied"
+                    ? "Location denied"
+                    : geoStatus === "unavailable"
+                      ? "Location unavailable"
+                      : "Where am I?"}
+              </button>
               {PRIMARY_BODIES.map((item) => {
                 const moons = isPlanetId(item.id) ? MOONS_BY_PARENT[item.id] : [];
                 return (
@@ -509,35 +538,6 @@ export function Controls({
                   </div>
                 );
               })}
-              <button
-                type="button"
-                className={`body-list-overview ${focus === "reset" ? "is-active" : ""}`.trim()}
-                onClick={() => {
-                  onFocus("reset");
-                  if (narrow)
-                    setOpenPanels((current) => ({
-                      ...current,
-                      objects: false,
-                    }));
-                }}
-              >
-                Solar system overview
-              </button>
-              <button
-                type="button"
-                className={`body-list-locate ${geoStatus === "ready" ? "is-active" : ""}`.trim()}
-                disabled={geoStatus === "pending"}
-                onClick={onWhereAmI}
-              >
-                <span className="body-swatch body-swatch-locate" aria-hidden />
-                {geoStatus === "pending"
-                  ? "Locating…"
-                  : geoStatus === "denied"
-                    ? "Location denied"
-                    : geoStatus === "unavailable"
-                      ? "Location unavailable"
-                      : "Where am I?"}
-              </button>
             </nav>
         </aside>
       </div>

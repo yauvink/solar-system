@@ -5,6 +5,7 @@ import { isMoonId, MOON_BY_ID, type BodyId } from '../astronomy/bodies.ts'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
 import { length } from '../astronomy/positions.ts'
 import type { BodyRadii } from '../astronomy/scale.ts'
+import { writeStartPose } from './startPose.ts'
 
 export type FocusId = BodyId | 'reset'
 
@@ -164,9 +165,13 @@ export function CameraRig({ focus, focusNonce, store, radii }: CameraRigProps) {
     if (!controls) return
 
     if (!snapped.current) {
-      setGoals(focus, store, radiiRef.current)
-      camera.position.copy(goalCam)
-      controls.target.copy(goalTarget)
+      if (focus === 'earth') {
+        writeStartPose(store, camera.position, controls.target)
+      } else {
+        setGoals(focus, store, radiiRef.current)
+        camera.position.copy(goalCam)
+        controls.target.copy(goalTarget)
+      }
       controls.update()
       if (focus !== 'reset') {
         bodyPos.set(store.positions[focus][0], store.positions[focus][1], store.positions[focus][2])

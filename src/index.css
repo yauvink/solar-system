@@ -220,13 +220,13 @@ body,
 
 .hud-credit {
   position: absolute;
-  right: max(16px, env(safe-area-inset-right));
-  bottom: max(14px, env(safe-area-inset-bottom));
+  right: max(6px, env(safe-area-inset-right));
+  bottom: max(4px, env(safe-area-inset-bottom));
   z-index: 2;
   margin: 0;
   pointer-events: auto;
-  font-size: 10px;
-  letter-spacing: 0.12em;
+  font-size: 8px;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--muted);
 }
@@ -473,7 +473,7 @@ body,
 }
 
 .body-list button.body-list-overview {
-  margin-top: 8px;
+  margin-top: 0;
   justify-content: flex-start;
   text-align: left;
   border-color: var(--accent);
@@ -488,7 +488,8 @@ body,
 }
 
 .body-list button.body-list-locate {
-  margin-top: 6px;
+  margin-top: 4px;
+  margin-bottom: 8px;
   justify-content: flex-start;
   text-align: left;
   border-color: #d87a62;
