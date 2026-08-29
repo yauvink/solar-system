@@ -1,0 +1,7 @@
+NASA Moon color map (public domain). Credit NASA / GSFC SVS.
+
+color.jpg  CGI Moon Kit LROC WAC color 2048×1024
+           https://svs.gsfc.nasa.gov/4720
+           NASA/Goddard Space Flight Center Scientific Visualization Studio
+           Lunar Reconnaissance Orbiter Camera, Hapke-normalized mosaic
+           Equirectangular, centered on 0° longitude (near side)

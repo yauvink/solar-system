@@ -1,10 +1,21 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { Quaternion, Vector3, type Group, type Mesh } from 'three'
+import {
+  ClampToEdgeWrapping,
+  Quaternion,
+  RepeatWrapping,
+  SRGBColorSpace,
+  TextureLoader,
+  Vector3,
+  type Group,
+  type Mesh,
+} from 'three'
 import { MOON_BY_ID, type MoonId } from '../astronomy/bodies.ts'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
 import { BodyLabel } from './BodyLabel.tsx'
 import { createSatelliteTexture } from './createBodyTexture.ts'
+
+const MOON_MAP_URL = `${import.meta.env.BASE_URL}textures/moon/color.jpg`
 
 type SatelliteProps = {
   id: MoonId
@@ -26,14 +37,25 @@ function moonLabelRange(store: EphemerisStore, id: MoonId, radius: number): numb
 export function Satellite({ id, store, radius }: SatelliteProps) {
   const groupRef = useRef<Group>(null)
   const spinRef = useRef<Mesh>(null)
-  const texture = useMemo(() => createSatelliteTexture(id), [id])
-  const segments = radius < 0.04 ? 16 : 32
+  const fallback = useMemo(() => createSatelliteTexture(id), [id])
+  const nasaMoon = useMemo(() => {
+    if (id !== 'moon') return null
+    const map = new TextureLoader().load(MOON_MAP_URL)
+    map.wrapS = RepeatWrapping
+    map.wrapT = ClampToEdgeWrapping
+    map.colorSpace = SRGBColorSpace
+    map.anisotropy = 8
+    return map
+  }, [id])
+  const texture = nasaMoon ?? fallback
+  const segments = id === 'moon' ? 64 : radius < 0.04 ? 16 : 32
 
   useLayoutEffect(() => {
     return () => {
-      texture.dispose()
+      fallback.dispose()
+      nasaMoon?.dispose()
     }
-  }, [texture])
+  }, [fallback, nasaMoon])
 
   useFrame(() => {
     const position = store.positions[id]
@@ -53,7 +75,14 @@ export function Satellite({ id, store, radius }: SatelliteProps) {
       <group ref={groupRef} scale={radius}>
         <mesh ref={spinRef}>
           <sphereGeometry args={[1, segments, segments]} />
-          <meshStandardMaterial map={texture} roughness={1} metalness={0} />
+          <meshStandardMaterial
+            map={texture}
+            roughness={id === 'moon' ? 0.92 : 1}
+            metalness={0}
+            emissiveMap={nasaMoon ?? undefined}
+            emissive={nasaMoon ? '#ffffff' : '#000000'}
+            emissiveIntensity={nasaMoon ? 0.22 : 0}
+          />
         </mesh>
       </group>
       <BodyLabel
