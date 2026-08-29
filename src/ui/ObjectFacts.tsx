@@ -20,7 +20,6 @@ export function ObjectFacts({ focus }: ObjectFactsProps) {
           </div>
         ))}
       </dl>
-      <p className="hud-object-facts-source">NASA / NSSDCA</p>
     </aside>
   )
 }
