@@ -41,9 +41,7 @@ type ControlsProps = {
   radii: BodyRadii;
   positions: BodyPositions;
   showAxes: boolean;
-  showDegrees: boolean;
   onShowAxesChange: (value: boolean) => void;
-  onShowDegreesChange: (value: boolean) => void;
   geoStatus: GeoStatus;
   onWhereAmI: () => void;
 };
@@ -183,9 +181,7 @@ export function Controls({
   radii,
   positions,
   showAxes,
-  showDegrees,
   onShowAxesChange,
-  onShowDegreesChange,
   geoStatus,
   onWhereAmI,
 }: ControlsProps) {
@@ -267,10 +263,27 @@ export function Controls({
           <aside
             id="hud-scale-panel"
             className="hud-panel hud-scale-panel"
-            aria-label="Scene scale"
+            aria-label="Scene"
             inert={!openPanels.scale}
           >
-            <p className="hud-kicker">Scale</p>
+            <div className="hud-panel-head">
+              <p className="hud-kicker">Scene</p>
+              <button
+                type="button"
+                className="scale-reset"
+                onClick={onScaleReset}
+              >
+                Reset
+              </button>
+            </div>
+            <label className="hud-check">
+              <input
+                type="checkbox"
+                checked={showAxes}
+                onChange={(event) => onShowAxesChange(event.target.checked)}
+              />
+              Show orbits and axes
+            </label>
             <Slider
               label="Body sizes"
               value={scale.bodyScale}
@@ -290,7 +303,7 @@ export function Controls({
               onChange={(auInUnits) => onScaleChange({ auInUnits })}
             />
             <Slider
-              label="Stars brightness"
+              label="Star brightness"
               value={scale.skyBrightness}
               min={SKY_BRIGHTNESS_MIN}
               max={SKY_BRIGHTNESS_MAX}
@@ -299,7 +312,7 @@ export function Controls({
               onChange={(skyBrightness) => onScaleChange({ skyBrightness })}
             />
             <Slider
-              label="Milky way brightness"
+              label="Milky Way brightness"
               value={scale.milkyWayBrightness}
               min={SKY_BRIGHTNESS_MIN}
               max={SKY_BRIGHTNESS_MAX}
@@ -317,33 +330,6 @@ export function Controls({
                 Earth and Moon overlap at the current scale.
               </p>
             ) : null}
-            <button
-              type="button"
-              className="scale-reset"
-              onClick={onScaleReset}
-            >
-              Reset scale
-            </button>
-
-            <label className="hud-check">
-              <input
-                type="checkbox"
-                checked={showAxes}
-                onChange={(event) => onShowAxesChange(event.target.checked)}
-              />
-              Show axes
-            </label>
-            <label
-              className={`hud-check ${showAxes ? "" : "is-disabled"}`.trim()}
-            >
-              <input
-                type="checkbox"
-                checked={showDegrees}
-                disabled={!showAxes}
-                onChange={(event) => onShowDegreesChange(event.target.checked)}
-              />
-              Show degrees
-            </label>
           </aside>
           <button
             type="button"
@@ -353,12 +339,12 @@ export function Controls({
             onClick={() => togglePanel("scale")}
           >
             <Chevron dir={openPanels.scale ? "left" : "right"} />
-            <span className="hud-dock-tab-name">Scale</span>
+            <span className="hud-dock-tab-name">Scene</span>
           </button>
         </div>
 
         <div
-          className={`hud-dock hud-dock-left ${openPanels.system ? "is-open" : ""}`.trim()}
+          className={`hud-dock hud-dock-left hud-dock-time ${openPanels.system ? "is-open" : ""}`.trim()}
         >
           <header id="hud-system-panel" className="hud-panel hud-system-panel">
             <p className="hud-kicker">Time</p>

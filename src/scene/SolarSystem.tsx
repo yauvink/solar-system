@@ -106,23 +106,27 @@ export const SolarSystem = memo(function SolarSystem({
         <Satellite key={id} id={id} store={store} radius={radii[id]} />
       ))}
 
-      {PLANET_IDS.map((id) => (
-        <OrbitRing
-          key={`${id}-orbit`}
-          points={planetOrbits[id]}
-          color={BODY_BY_ID[id].orbitColor}
-          opacity={id === "neptune" || id === "uranus" ? 0.14 : 0.22}
-        />
-      ))}
-      {MOON_IDS.map((id) => (
-        <OrbitRing
-          key={`${id}-orbit`}
-          points={moonOrbits[id]}
-          getOffset={() => store.positions[MOON_BY_ID[id].parent]}
-          color={MOON_BY_ID[id].orbitColor}
-          opacity={0.32}
-        />
-      ))}
+      {showAxes ? (
+        <>
+          {PLANET_IDS.map((id) => (
+            <OrbitRing
+              key={`${id}-orbit`}
+              points={planetOrbits[id]}
+              color={BODY_BY_ID[id].orbitColor}
+              opacity={id === "neptune" || id === "uranus" ? 0.14 : 0.22}
+            />
+          ))}
+          {MOON_IDS.map((id) => (
+            <OrbitRing
+              key={`${id}-orbit`}
+              points={moonOrbits[id]}
+              getOffset={() => store.positions[MOON_BY_ID[id].parent]}
+              color={MOON_BY_ID[id].orbitColor}
+              opacity={0.32}
+            />
+          ))}
+        </>
+      ) : null}
 
       {showAxes
         ? SYSTEM_BODIES.map((body) => (

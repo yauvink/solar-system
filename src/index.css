@@ -218,6 +218,22 @@ body,
   color: var(--accent);
 }
 
+.hud-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.hud-panel-head .hud-kicker {
+  margin: 0;
+}
+
+.hud-scale-panel .hud-check {
+  margin-top: 6px;
+}
+
 .hud-object-facts {
   position: absolute;
   top: max(14px, env(safe-area-inset-top));
@@ -692,12 +708,53 @@ body,
   cursor: pointer;
 }
 
+.hud-panel-head .scale-reset {
+  margin-top: 0;
+  padding: 7px 16px;
+  font-size: 13px;
+}
+
 .scale-reset:hover {
   border-color: var(--accent);
   color: var(--accent);
 }
 
 @media (max-width: 840px) {
+  .hud {
+    --time-bar: calc(118px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hud-stack-left {
+    bottom: calc(var(--time-bar) + 8px);
+  }
+
+  .hud-dock-time,
+  .hud-dock-time.hud-dock-left,
+  .hud-dock-time.hud-dock-left.is-open {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    z-index: 4;
+    width: 100%;
+    transform: none;
+    transition: none;
+  }
+
+  .hud-dock-time .hud-dock-tab {
+    display: none;
+  }
+
+  .hud-dock-time .hud-kicker {
+    display: none;
+  }
+
+  .hud-credit {
+    bottom: calc(var(--time-bar) - 6px);
+    font-size: 6.4px;
+  }
+
   .hud-object-facts {
     top: max(4px, env(safe-area-inset-top));
     left: max(4px, env(safe-area-inset-left));
@@ -744,9 +801,60 @@ body,
     min-width: min(300px, calc(100vw - var(--dock-tab) - 8px));
   }
 
+  .hud-dock-time .hud-system-panel {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    max-height: none;
+    overflow: hidden;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    border-bottom: none;
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .hud-dock-time .hud-datetime {
+    margin: 0 0 8px;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .hud-dock-time .hud-datetime-field span {
+    display: none;
+  }
+
+  .hud-dock-time .hud-datetime-field input,
+  .hud-dock-time .hud-now,
+  .hud-dock-time .hud-scrub button {
+    min-height: 40px;
+    height: 40px;
+  }
+
+  .hud-dock-time .hud-now {
+    width: 56px;
+    padding: 0;
+    border-radius: 999px;
+    font-size: 12px;
+  }
+
+  .hud-dock-time .hud-scrub {
+    margin: 0;
+    gap: 6px;
+  }
+
+  .hud-dock-time .hud-scrub button {
+    padding: 0;
+  }
+
   .hud-scale-panel,
   .hud-objects-panel {
     width: min(320px, calc(100vw - var(--dock-tab) - 8px));
+    max-height: calc(100dvh - var(--time-bar) - 24px);
+  }
+
+  .hud-stack-left .hud-scale-panel {
+    max-height: calc(100dvh - var(--time-bar) - 120px);
   }
 
   .hud-datetime {
@@ -759,6 +867,12 @@ body,
   .body-list button,
   .scale-reset {
     min-height: 44px;
+  }
+
+  .hud-panel-head .scale-reset {
+    min-height: 44px;
+    padding: 8px 18px;
+    font-size: 14px;
   }
 
   .body-list button.body-moon {

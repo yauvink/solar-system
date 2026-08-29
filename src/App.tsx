@@ -23,7 +23,6 @@ import { Vector3 } from 'three'
 import { Controls, type GeoStatus } from './ui/Controls.tsx'
 
 const SHOW_AXES_KEY = 'solar-system:showAxes'
-const SHOW_DEGREES_KEY = 'solar-system:showDegrees'
 const SCALE_KEY = 'solar-system:scale'
 
 function readStoredFlag(key: string, fallback = false): boolean {
@@ -106,10 +105,6 @@ export default function App() {
   }, [store])
   const [focusNonce, setFocusNonce] = useState(0)
   const [showAxes, setShowAxes] = useState(() => readStoredFlag(SHOW_AXES_KEY, true))
-  const [showDegrees, setShowDegrees] = useState(() => {
-    const axes = readStoredFlag(SHOW_AXES_KEY, true)
-    return axes && readStoredFlag(SHOW_DEGREES_KEY, true)
-  })
   const skyRadius = skyRadiusForScale(scale.auInUnits)
   const cameraFar = cameraFarForScale(scale.auInUnits)
   const maxDistance = maxDistanceForScale(scale.auInUnits)
@@ -132,20 +127,11 @@ export default function App() {
 
   const handleShowAxes = useCallback((value: boolean) => {
     setShowAxes(value)
-    if (!value) setShowDegrees(false)
-  }, [])
-
-  const handleShowDegrees = useCallback((value: boolean) => {
-    setShowDegrees(value)
   }, [])
 
   useEffect(() => {
     writeStoredFlag(SHOW_AXES_KEY, showAxes)
   }, [showAxes])
-
-  useEffect(() => {
-    writeStoredFlag(SHOW_DEGREES_KEY, showDegrees)
-  }, [showDegrees])
 
   useEffect(() => {
     try {
@@ -207,7 +193,7 @@ export default function App() {
           cameraFar={cameraFar}
           maxDistance={maxDistance}
           showAxes={showAxes}
-          showDegrees={showDegrees}
+          showDegrees={showAxes}
           skyBrightness={scale.skyBrightness}
           milkyWayBrightness={scale.milkyWayBrightness}
           auInUnits={scale.auInUnits}
@@ -231,9 +217,7 @@ export default function App() {
         radii={radii}
         positions={positions}
         showAxes={showAxes}
-        showDegrees={showDegrees}
         onShowAxesChange={handleShowAxes}
-        onShowDegreesChange={handleShowDegrees}
         geoStatus={geoStatus}
         onWhereAmI={handleWhereAmI}
       />
