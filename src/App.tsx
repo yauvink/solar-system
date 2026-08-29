@@ -61,6 +61,7 @@ function readStoredScale(): ScaleSettings {
     if (!raw) return DEFAULT_SCALE
     const parsed = JSON.parse(raw) as Partial<ScaleSettings>
     const skyBrightness = Number(parsed.skyBrightness)
+    const milkyWayBrightness = Number(parsed.milkyWayBrightness)
     return {
       auInUnits: clamp(Number(parsed.auInUnits) || DEFAULT_SCALE.auInUnits, 20, 250),
       bodyScale: clamp(
@@ -70,6 +71,13 @@ function readStoredScale(): ScaleSettings {
       ),
       skyBrightness: clamp(
         Number.isFinite(skyBrightness) ? skyBrightness : DEFAULT_SCALE.skyBrightness,
+        SKY_BRIGHTNESS_MIN,
+        SKY_BRIGHTNESS_MAX,
+      ),
+      milkyWayBrightness: clamp(
+        Number.isFinite(milkyWayBrightness)
+          ? milkyWayBrightness
+          : DEFAULT_SCALE.milkyWayBrightness,
         SKY_BRIGHTNESS_MIN,
         SKY_BRIGHTNESS_MAX,
       ),
@@ -201,6 +209,7 @@ export default function App() {
           showAxes={showAxes}
           showDegrees={showDegrees}
           skyBrightness={scale.skyBrightness}
+          milkyWayBrightness={scale.milkyWayBrightness}
           auInUnits={scale.auInUnits}
           perseidCrossing={perseidCrossing}
           startTarget={startCamera.target}

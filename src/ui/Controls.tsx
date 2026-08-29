@@ -288,13 +288,22 @@ export function Controls({
               onChange={(auInUnits) => onScaleChange({ auInUnits })}
             />
             <Slider
-              label="Galaxy brightness"
+              label="Stars brightness"
               value={scale.skyBrightness}
               min={SKY_BRIGHTNESS_MIN}
               max={SKY_BRIGHTNESS_MAX}
               step={1}
               format={(value) => `${value}%`}
               onChange={(skyBrightness) => onScaleChange({ skyBrightness })}
+            />
+            <Slider
+              label="Milky way brightness"
+              value={scale.milkyWayBrightness}
+              min={SKY_BRIGHTNESS_MIN}
+              max={SKY_BRIGHTNESS_MAX}
+              step={1}
+              format={(value) => `${value}%`}
+              onChange={(milkyWayBrightness) => onScaleChange({ milkyWayBrightness })}
             />
             <p className="hud-scale">
               Body sizes ×{scale.bodyScale} relative to distances. 1 AU ={" "}

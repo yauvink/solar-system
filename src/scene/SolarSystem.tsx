@@ -37,6 +37,7 @@ type SolarSystemProps = {
   showAxes: boolean;
   showDegrees: boolean;
   skyBrightness: number;
+  milkyWayBrightness: number;
   auInUnits: number;
   perseidCrossing: boolean;
   startTarget: [number, number, number];
@@ -54,6 +55,7 @@ export const SolarSystem = memo(function SolarSystem({
   showAxes,
   showDegrees,
   skyBrightness,
+  milkyWayBrightness,
   auInUnits,
   perseidCrossing,
   startTarget,
@@ -86,7 +88,8 @@ export const SolarSystem = memo(function SolarSystem({
         radius={skyRadius}
         showAxes={showAxes}
         showDegrees={showDegrees}
-        brightness={skyBrightness}
+        starBrightness={skyBrightness}
+        milkyWayBrightness={milkyWayBrightness}
       />
       <PerseidStream
         auInUnits={auInUnits}

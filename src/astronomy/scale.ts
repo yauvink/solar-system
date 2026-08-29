@@ -7,6 +7,7 @@ export type ScaleSettings = {
   auInUnits: number
   bodyScale: number
   skyBrightness: number
+  milkyWayBrightness: number
 }
 
 export type BodyRadii = Record<BodyId, number>
@@ -19,7 +20,8 @@ export const SKY_BRIGHTNESS_MAX = 100
 export const DEFAULT_SCALE: ScaleSettings = {
   auInUnits: 100,
   bodyScale: 15,
-  skyBrightness: 20,
+  skyBrightness: 30,
+  milkyWayBrightness: 10,
 }
 
 export function auToDistanceUnits(au: number, auInUnits: number): number {
