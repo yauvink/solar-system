@@ -4,10 +4,10 @@ import {
   AdditiveBlending,
   ClampToEdgeWrapping,
   Matrix4,
+  MeshStandardMaterial,
+  NoColorSpace,
   Quaternion,
   RepeatWrapping,
-  NoColorSpace,
-  ShaderMaterial,
   SRGBColorSpace,
   TextureLoader,
   Vector3,
@@ -86,9 +86,8 @@ function useNasaEarthMaps(): EarthMaps | null {
           return
         }
         setMaps({
-          // Custom terminator shader outputs display-referred color (toneMapped: false).
-          day: prepareMap(day, false),
-          night: prepareMap(night, false),
+          day: prepareMap(day),
+          night: prepareMap(night),
           clouds: prepareMap(clouds, false),
         })
       })
@@ -115,36 +114,6 @@ function useNasaEarthMaps(): EarthMaps | null {
 const sunDirWorld = new Vector3()
 const worldInverse = new Matrix4()
 
-const DAY_NIGHT_VERT = /* glsl */ `
-varying vec2 vUv;
-varying vec3 vObjectNormal;
-
-void main() {
-  vUv = uv;
-  vObjectNormal = normal;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-}
-`
-
-const DAY_NIGHT_FRAG = /* glsl */ `
-uniform sampler2D dayMap;
-uniform sampler2D nightMap;
-uniform vec3 sunDirection;
-varying vec2 vUv;
-varying vec3 vObjectNormal;
-
-void main() {
-  vec3 day = texture2D(dayMap, vUv).rgb * 1.45;
-  vec3 night = texture2D(nightMap, vUv).rgb * 3.2 + vec3(0.018, 0.024, 0.05);
-  float light = dot(normalize(vObjectNormal), normalize(sunDirection));
-  float dayFactor = smoothstep(-0.05, 0.1, light);
-  vec3 color = mix(night, day, dayFactor);
-  float twilight = exp(-light * light * 22.0);
-  color += vec3(0.26, 0.11, 0.04) * twilight * 0.2;
-  gl_FragColor = vec4(color, 1.0);
-}
-`
-
 function EarthDayNightMaterial({
   day,
   night,
@@ -157,28 +126,146 @@ function EarthDayNightMaterial({
   meshRef: RefObject<Mesh | null>
 }) {
   const material = useMemo(() => {
-    return new ShaderMaterial({
-      uniforms: {
-        dayMap: { value: day },
-        nightMap: { value: night },
-        sunDirection: { value: new Vector3(1, 0, 0) },
-      },
-      vertexShader: DAY_NIGHT_VERT,
-      fragmentShader: DAY_NIGHT_FRAG,
-      toneMapped: false,
+    const mat = new MeshStandardMaterial({
+      map: day,
+      roughness: 0.88,
+      metalness: 0,
+      emissiveMap: night,
+      emissive: '#ffffff',
+      emissiveIntensity: 1.65,
     })
+    mat.customProgramCacheKey = () => 'earth-sun-terminator-v2'
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.sunDirection = { value: new Vector3(1, 0, 0) }
+      mat.userData.sunDirection = shader.uniforms.sunDirection
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          '#include <common>',
+          /* glsl */ `
+          #include <common>
+          varying vec3 vObjectNormal;
+          `,
+        )
+        .replace(
+          '#include <beginnormal_vertex>',
+          /* glsl */ `
+          #include <beginnormal_vertex>
+          vObjectNormal = objectNormal;
+          `,
+        )
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <common>',
+          /* glsl */ `
+          #include <common>
+          uniform vec3 sunDirection;
+          varying vec3 vObjectNormal;
+          `,
+        )
+        .replace(
+          '#include <emissivemap_fragment>',
+          /* glsl */ `
+          float dayFactor = smoothstep(-0.04, 0.14, dot(normalize(vObjectNormal), normalize(sunDirection)));
+          diffuseColor.rgb *= mix(0.09, 1.0, dayFactor);
+          #ifdef USE_EMISSIVEMAP
+            vec4 emissiveColor = texture2D(emissiveMap, vEmissiveMapUv);
+            float cityLuma = dot(emissiveColor.rgb, vec3(0.299, 0.587, 0.114));
+            vec3 nightFill = emissiveColor.rgb * 0.42;
+            vec3 cities = emissiveColor.rgb * smoothstep(0.035, 0.16, cityLuma);
+            totalEmissiveRadiance *= (nightFill + cities) * (1.0 - dayFactor);
+          #endif
+          `,
+        )
+    }
+    return mat
   }, [day, night])
 
   useFrame(() => {
     const mesh = meshRef.current
-    if (!mesh) return
+    const sunUniform = material.userData.sunDirection as { value: Vector3 } | undefined
+    if (!mesh || !sunUniform) return
     const earth = store.positions.earth
     sunDirWorld.set(-earth[0], -earth[1], -earth[2]).normalize()
     mesh.updateWorldMatrix(true, false)
     worldInverse.copy(mesh.matrixWorld).invert()
-    material.uniforms.sunDirection.value
-      .copy(sunDirWorld)
-      .transformDirection(worldInverse)
+    sunUniform.value.copy(sunDirWorld).transformDirection(worldInverse)
+  })
+
+  useLayoutEffect(() => () => material.dispose(), [material])
+
+  return <primitive object={material} attach="material" />
+}
+
+function EarthCloudMaterial({
+  clouds,
+  store,
+  meshRef,
+}: {
+  clouds: Texture
+  store: EphemerisStore
+  meshRef: RefObject<Mesh | null>
+}) {
+  const material = useMemo(() => {
+    const mat = new MeshStandardMaterial({
+      color: '#f2f6ff',
+      alphaMap: clouds,
+      transparent: true,
+      opacity: 0.62,
+      depthWrite: false,
+      roughness: 1,
+      metalness: 0,
+    })
+    mat.customProgramCacheKey = () => 'earth-clouds-sun-v2'
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.sunDirection = { value: new Vector3(1, 0, 0) }
+      mat.userData.sunDirection = shader.uniforms.sunDirection
+      shader.vertexShader = shader.vertexShader
+        .replace(
+          '#include <common>',
+          /* glsl */ `
+          #include <common>
+          varying vec3 vObjectNormal;
+          `,
+        )
+        .replace(
+          '#include <beginnormal_vertex>',
+          /* glsl */ `
+          #include <beginnormal_vertex>
+          vObjectNormal = objectNormal;
+          `,
+        )
+      shader.fragmentShader = shader.fragmentShader
+        .replace(
+          '#include <common>',
+          /* glsl */ `
+          #include <common>
+          uniform vec3 sunDirection;
+          varying vec3 vObjectNormal;
+          `,
+        )
+        .replace(
+          '#include <alphamap_fragment>',
+          /* glsl */ `
+          #include <alphamap_fragment>
+          float dayFactor = smoothstep(-0.02, 0.16, dot(normalize(vObjectNormal), normalize(sunDirection)));
+          diffuseColor.rgb *= mix(0.08, 1.0, dayFactor);
+          diffuseColor.a *= mix(0.22, 1.0, dayFactor);
+          `,
+        )
+    }
+    return mat
+  }, [clouds])
+
+  useFrame((_, delta) => {
+    clouds.offset.x = (clouds.offset.x + delta * 0.0019) % 1
+    const mesh = meshRef.current
+    const sunUniform = material.userData.sunDirection as { value: Vector3 } | undefined
+    if (!mesh || !sunUniform) return
+    const earth = store.positions.earth
+    sunDirWorld.set(-earth[0], -earth[1], -earth[2]).normalize()
+    mesh.updateWorldMatrix(true, false)
+    worldInverse.copy(mesh.matrixWorld).invert()
+    sunUniform.value.copy(sunDirWorld).transformDirection(worldInverse)
   })
 
   useLayoutEffect(() => () => material.dispose(), [material])
@@ -227,6 +314,7 @@ export function Earth({ store, radius, userGeo }: EarthProps) {
   const groupRef = useRef<Group>(null)
   const spinRef = useRef<Group>(null)
   const meshRef = useRef<Mesh>(null)
+  const cloudRef = useRef<Mesh>(null)
   const fallback = useMemo(() => createEarthTexture(), [])
   const maps = useNasaEarthMaps()
 
@@ -275,19 +363,9 @@ export function Earth({ store, radius, userGeo }: EarthProps) {
           </mesh>
           {userGeo ? <YouAreHere lat={userGeo.lat} lon={userGeo.lon} /> : null}
           {SHOW_CLOUDS_LAYER && maps ? (
-            <mesh scale={1.018}>
+            <mesh ref={cloudRef} scale={1.018}>
               <sphereGeometry args={[1, 64, 64]} />
-              <meshStandardMaterial
-                color="#f2f6ff"
-                alphaMap={maps.clouds}
-                transparent
-                opacity={0.62}
-                depthWrite={false}
-                roughness={1}
-                metalness={0}
-                emissive="#dce6f5"
-                emissiveIntensity={0.1}
-              />
+              <EarthCloudMaterial clouds={maps.clouds} store={store} meshRef={cloudRef} />
             </mesh>
           ) : null}
         </group>
