@@ -49,9 +49,6 @@ export function Planet({ id, store, radius }: PlanetProps) {
             map={texture}
             roughness={0.62}
             metalness={0.02}
-            emissiveMap={id === 'earth' ? texture : undefined}
-            emissive={id === 'earth' ? '#ffffff' : '#000000'}
-            emissiveIntensity={id === 'earth' ? 0.18 : 0}
           />
         </mesh>
         {id === 'saturn' ? (

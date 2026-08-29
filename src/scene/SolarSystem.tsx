@@ -12,6 +12,7 @@ import { CameraRig, type FocusId } from "./CameraRig.tsx";
 import { EphemerisLoop } from "./EphemerisLoop.tsx";
 import { MilkyWay } from "./MilkyWay.tsx";
 import { PerseidStream } from "./PerseidStream.tsx";
+import { Earth } from "./Earth.tsx";
 import { Moon } from "./Moon.tsx";
 import { OrbitRing } from "./OrbitRing.tsx";
 import { Planet } from "./Planet.tsx";
@@ -77,9 +78,10 @@ export const SolarSystem = memo(function SolarSystem({
       <Stars radius={280} depth={70} count={7000} factor={3.4} fade />
 
       <Sun store={store} radius={radii.sun} />
-      {PLANET_IDS.map((id) => (
+      {PLANET_IDS.filter((id) => id !== "earth").map((id) => (
         <Planet key={id} id={id} store={store} radius={radii[id]} />
       ))}
+      <Earth store={store} radius={radii.earth} />
       <Moon store={store} radius={radii.moon} />
 
       {PLANET_IDS.map((id) => (

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { SYSTEM_BODIES, type BodyId } from "../astronomy/bodies.ts";
 import {
   SCRUB_FAST_DAYS_PER_SEC,
+  SCRUB_FINE_DAYS_PER_SEC,
   SCRUB_SLOW_DAYS_PER_SEC,
 } from "../astronomy/ephemerisStore.ts";
 import type { BodyPositions } from "../astronomy/positions.ts";
@@ -348,24 +349,42 @@ export function Controls({
             <div className="hud-scrub" aria-label="Time rewind">
               <button
                 type="button"
+                aria-label="Rewind fast"
                 {...holdHandlers(-SCRUB_FAST_DAYS_PER_SEC, onSpeed)}
               >
                 ««
               </button>
               <button
                 type="button"
+                aria-label="Rewind"
                 {...holdHandlers(-SCRUB_SLOW_DAYS_PER_SEC, onSpeed)}
               >
                 «
               </button>
               <button
                 type="button"
+                aria-label="Rewind slow"
+                {...holdHandlers(-SCRUB_FINE_DAYS_PER_SEC, onSpeed)}
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                aria-label="Forward slow"
+                {...holdHandlers(SCRUB_FINE_DAYS_PER_SEC, onSpeed)}
+              >
+                ›
+              </button>
+              <button
+                type="button"
+                aria-label="Forward"
                 {...holdHandlers(SCRUB_SLOW_DAYS_PER_SEC, onSpeed)}
               >
                 »
               </button>
               <button
                 type="button"
+                aria-label="Forward fast"
                 {...holdHandlers(SCRUB_FAST_DAYS_PER_SEC, onSpeed)}
               >
                 »»

@@ -284,7 +284,7 @@ body,
 
 .hud-scrub {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   margin: 0 0 10px;
 }
 

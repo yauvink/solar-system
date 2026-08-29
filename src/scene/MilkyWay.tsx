@@ -9,10 +9,12 @@ import {
   LineBasicMaterial,
   Matrix4,
   MeshBasicMaterial,
-  Quaternion,
+  SRGBColorSpace,
+  TextureLoader,
   Vector3,
   type Group,
   type Mesh,
+  type Sprite,
 } from 'three'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
 import { length } from '../astronomy/positions.ts'
@@ -30,9 +32,10 @@ const xAxis = new Vector3()
 const yAxis = new Vector3()
 const zAxis = new Vector3()
 const basis = new Matrix4()
-const yUp = new Vector3(0, 1, 0)
 const motionDir = new Vector3()
-const coneOrient = new Quaternion()
+
+const BLACK_HOLE_URL = `${import.meta.env.BASE_URL}textures/milky-way/black-hole.png`
+const BLACK_HOLE_ASPECT = 558 / 274
 
 export function MilkyWay({
   store,
@@ -42,9 +45,14 @@ export function MilkyWay({
 }: MilkyWayProps) {
   const skyRef = useRef<Group>(null)
   const haloRef = useRef<Mesh>(null)
-  const coneRef = useRef<Mesh>(null)
+  const tipRef = useRef<Sprite>(null)
   const labelRef = useRef<Group>(null)
   const texture = useMemo(() => createMilkyWayTexture(), [])
+  const holeMap = useMemo(() => {
+    const map = new TextureLoader().load(BLACK_HOLE_URL)
+    map.colorSpace = SRGBColorSpace
+    return map
+  }, [])
   const coreOffset = radius * 0.96
   const coreSize = Math.max(8, radius * 0.004)
 
@@ -67,10 +75,11 @@ export function MilkyWay({
   useLayoutEffect(() => {
     return () => {
       texture.dispose()
+      holeMap.dispose()
       arrowGeometry.dispose()
       arrowMaterial.dispose()
     }
-  }, [arrowGeometry, arrowMaterial, texture])
+  }, [arrowGeometry, arrowMaterial, holeMap, texture])
 
   useFrame((state) => {
     const galactic = store.galactic
@@ -103,11 +112,10 @@ export function MilkyWay({
     attr.needsUpdate = true
     arrowGeometry.computeBoundingSphere()
 
-    if (coneRef.current) {
-      coneRef.current.position.copy(motionDir).multiplyScalar(reach)
-      coneRef.current.quaternion.copy(coneOrient.setFromUnitVectors(yUp, motionDir))
-      const coneScale = Math.max(reach * 0.025, 0.4)
-      coneRef.current.scale.set(coneScale, coneScale * 1.6, coneScale)
+    if (tipRef.current) {
+      tipRef.current.position.copy(motionDir).multiplyScalar(reach)
+      const tipScale = Math.max(reach * 0.052, 0.95)
+      tipRef.current.scale.set(tipScale * BLACK_HOLE_ASPECT, tipScale, 1)
     }
     if (labelRef.current) {
       labelRef.current.position.copy(motionDir).multiplyScalar(reach * 0.72)
@@ -165,10 +173,14 @@ export function MilkyWay({
       {showAxes ? (
         <>
           <primitive object={arrow} />
-          <mesh ref={coneRef}>
-            <coneGeometry args={[0.45, 1.2, 12]} />
-            <meshBasicMaterial color="#f0c36a" />
-          </mesh>
+          <sprite ref={tipRef} frustumCulled={false}>
+            <spriteMaterial
+              map={holeMap}
+              transparent
+              depthWrite={false}
+              toneMapped={false}
+            />
+          </sprite>
           {showDegrees ? (
             <group ref={labelRef}>
               <ScreenBillboardText color="#f0c36a">
