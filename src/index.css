@@ -10,6 +10,23 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+img,
+svg,
+canvas,
+video {
+  -webkit-user-drag: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 html,
@@ -198,6 +215,28 @@ body,
   font-size: 11px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+  color: var(--accent);
+}
+
+.hud-credit {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 2;
+  margin: 0;
+  pointer-events: auto;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.hud-credit a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.hud-credit a:hover {
   color: var(--accent);
 }
 
@@ -642,7 +681,7 @@ body,
   }
 
   .hud-dock-right .hud-dock-tab {
-    margin-top: calc(40dvh - max(16px, env(safe-area-inset-top)));
+    margin-top: calc(30dvh - max(16px, env(safe-area-inset-top)));
   }
 
   .hud-dock-tab {
@@ -851,8 +890,8 @@ body,
 
 .space-loader-stage {
   position: relative;
-  width: 188px;
-  height: 168px;
+  width: 210px;
+  height: 190px;
   overflow: visible;
 }
 
@@ -869,8 +908,8 @@ body,
   top: 50%;
   left: 50%;
   z-index: 2;
-  width: 54px;
-  height: 54px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   transform: translate(-50%, -50%);
   background:
@@ -883,9 +922,9 @@ body,
   top: 50%;
   left: 50%;
   z-index: 3;
-  width: 168px;
-  height: 58px;
-  margin: -29px 0 0 -84px;
+  width: 184px;
+  height: 112px;
+  margin: -56px 0 0 -92px;
   overflow: visible;
   transform: rotate(-18deg);
   animation: space-ring 8s linear infinite;

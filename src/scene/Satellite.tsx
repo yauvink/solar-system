@@ -20,7 +20,7 @@ function moonLabelRange(store: EphemerisStore, id: MoonId, radius: number): numb
   const parent = store.positions[MOON_BY_ID[id].parent]
   const moon = store.positions[id]
   const sep = Math.hypot(moon[0] - parent[0], moon[1] - parent[1], moon[2] - parent[2])
-  return Math.max(sep * 3.6, radius * 22, 3.2)
+  return Math.max(sep * 8, radius * 80, 16)
 }
 
 export function Satellite({ id, store, radius }: SatelliteProps) {

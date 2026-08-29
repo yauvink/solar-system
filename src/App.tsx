@@ -8,6 +8,8 @@ import {
   DEFAULT_SCALE,
   getBodyRadii,
   maxDistanceForScale,
+  SKY_BRIGHTNESS_MAX,
+  SKY_BRIGHTNESS_MIN,
   skyRadiusForScale,
   type ScaleSettings,
 } from './astronomy/scale.ts'
@@ -57,12 +59,18 @@ function readStoredScale(): ScaleSettings {
     const raw = window.localStorage.getItem(SCALE_KEY)
     if (!raw) return DEFAULT_SCALE
     const parsed = JSON.parse(raw) as Partial<ScaleSettings>
+    const skyBrightness = Number(parsed.skyBrightness)
     return {
       auInUnits: clamp(Number(parsed.auInUnits) || DEFAULT_SCALE.auInUnits, 20, 250),
       bodyScale: clamp(
         Number(parsed.bodyScale) || DEFAULT_SCALE.bodyScale,
         BODY_SCALE_MIN,
         BODY_SCALE_MAX,
+      ),
+      skyBrightness: clamp(
+        Number.isFinite(skyBrightness) ? skyBrightness : DEFAULT_SCALE.skyBrightness,
+        SKY_BRIGHTNESS_MIN,
+        SKY_BRIGHTNESS_MAX,
       ),
     }
   } catch {
@@ -191,6 +199,7 @@ export default function App() {
           maxDistance={maxDistance}
           showAxes={showAxes}
           showDegrees={showDegrees}
+          skyBrightness={scale.skyBrightness}
           auInUnits={scale.auInUnits}
           perseidCrossing={perseidCrossing}
           startTarget={startCamera.target}

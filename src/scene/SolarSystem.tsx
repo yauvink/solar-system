@@ -1,5 +1,5 @@
 import { memo, useMemo } from "react";
-import { OrbitControls, Stars } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import {
   BODY_BY_ID,
   MOON_BY_ID,
@@ -36,6 +36,7 @@ type SolarSystemProps = {
   maxDistance: number;
   showAxes: boolean;
   showDegrees: boolean;
+  skyBrightness: number;
   auInUnits: number;
   perseidCrossing: boolean;
   startTarget: [number, number, number];
@@ -52,6 +53,7 @@ export const SolarSystem = memo(function SolarSystem({
   maxDistance,
   showAxes,
   showDegrees,
+  skyBrightness,
   auInUnits,
   perseidCrossing,
   startTarget,
@@ -84,13 +86,13 @@ export const SolarSystem = memo(function SolarSystem({
         radius={skyRadius}
         showAxes={showAxes}
         showDegrees={showDegrees}
+        brightness={skyBrightness}
       />
       <PerseidStream
         auInUnits={auInUnits}
         crossing={perseidCrossing}
         labelRadius={radii.earth}
       />
-      <Stars radius={280} depth={70} count={7000} factor={3.4} fade />
 
       <Sun store={store} radius={radii.sun} />
       {PLANET_IDS.filter((id) => id !== "earth").map((id) => (

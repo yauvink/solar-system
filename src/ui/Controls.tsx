@@ -17,6 +17,8 @@ import type { BodyPositions } from "../astronomy/positions.ts";
 import {
   BODY_SCALE_MAX,
   BODY_SCALE_MIN,
+  SKY_BRIGHTNESS_MAX,
+  SKY_BRIGHTNESS_MIN,
   type BodyRadii,
   type ScaleSettings,
 } from "../astronomy/scale.ts";
@@ -285,6 +287,15 @@ export function Controls({
               format={(value) => `1 AU = ${value}`}
               onChange={(auInUnits) => onScaleChange({ auInUnits })}
             />
+            <Slider
+              label="Galaxy brightness"
+              value={scale.skyBrightness}
+              min={SKY_BRIGHTNESS_MIN}
+              max={SKY_BRIGHTNESS_MAX}
+              step={1}
+              format={(value) => `${value}%`}
+              onChange={(skyBrightness) => onScaleChange({ skyBrightness })}
+            />
             <p className="hud-scale">
               Body sizes ×{scale.bodyScale} relative to distances. 1 AU ={" "}
               {scale.auInUnits} scene units. Positions are ephemerides for the{" "}
@@ -530,6 +541,16 @@ export function Controls({
             </nav>
         </aside>
       </div>
+
+      <p className="hud-credit">
+        <a
+          href="https://svs.gsfc.nasa.gov/"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Imagery · NASA / GSFC SVS
+        </a>
+      </p>
     </div>
   );
 }

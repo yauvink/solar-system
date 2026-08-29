@@ -6,23 +6,29 @@ export const KM_PER_AU = 149_597_870.7
 export type ScaleSettings = {
   auInUnits: number
   bodyScale: number
+  skyBrightness: number
 }
 
 export type BodyRadii = Record<BodyId, number>
 
 export const BODY_SCALE_MIN = 1
 export const BODY_SCALE_MAX = 30
+export const SKY_BRIGHTNESS_MIN = 0
+export const SKY_BRIGHTNESS_MAX = 100
 
 export const DEFAULT_SCALE: ScaleSettings = {
   auInUnits: 100,
-  bodyScale: BODY_SCALE_MAX,
+  bodyScale: 15,
+  skyBrightness: 20,
 }
 
 export function auToDistanceUnits(au: number, auInUnits: number): number {
   return au * auInUnits
 }
 
-export function getBodyRadii(settings: ScaleSettings): BodyRadii {
+export function getBodyRadii(
+  settings: Pick<ScaleSettings, 'auInUnits' | 'bodyScale'>,
+): BodyRadii {
   const kmPerUnit = KM_PER_AU / settings.auInUnits
   const toUnits = (km: number) => (km / kmPerUnit) * settings.bodyScale
   return Object.fromEntries(

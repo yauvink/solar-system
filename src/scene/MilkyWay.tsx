@@ -1,31 +1,31 @@
 import { useLayoutEffect, useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
-  AdditiveBlending,
   BackSide,
   BufferAttribute,
   BufferGeometry,
+  LinearFilter,
   Line,
   LineBasicMaterial,
   Matrix4,
-  MeshBasicMaterial,
+  RepeatWrapping,
   SRGBColorSpace,
   TextureLoader,
   Vector3,
   type Group,
-  type Mesh,
   type Sprite,
+  type WebGLProgramParametersWithUniforms,
 } from 'three'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
 import { length } from '../astronomy/positions.ts'
 import { ScreenBillboardText } from './BodyLabel.tsx'
-import { createMilkyWayTexture } from './createBodyTexture.ts'
 
 type MilkyWayProps = {
   store: EphemerisStore
   radius: number
   showAxes: boolean
   showDegrees: boolean
+  brightness: number
 }
 
 const xAxis = new Vector3()
@@ -34,6 +34,7 @@ const zAxis = new Vector3()
 const basis = new Matrix4()
 const motionDir = new Vector3()
 
+const STARMAP_URL = `${import.meta.env.BASE_URL}textures/milky-way/starmap.webp`
 const BLACK_HOLE_URL = `${import.meta.env.BASE_URL}textures/milky-way/black-hole.png`
 const BLACK_HOLE_ASPECT = 558 / 274
 
@@ -42,19 +43,44 @@ export function MilkyWay({
   radius,
   showAxes,
   showDegrees,
+  brightness,
 }: MilkyWayProps) {
   const skyRef = useRef<Group>(null)
-  const haloRef = useRef<Mesh>(null)
   const tipRef = useRef<Sprite>(null)
   const labelRef = useRef<Group>(null)
-  const texture = useMemo(() => createMilkyWayTexture(), [])
+  const texture = useMemo(() => {
+    const map = new TextureLoader().load(STARMAP_URL)
+    map.colorSpace = SRGBColorSpace
+    map.wrapS = RepeatWrapping
+    // NASA galactic map is centered on the core; our sphere seam is +X after the flip.
+    map.offset.x = 0.5
+    map.generateMipmaps = false
+    map.minFilter = LinearFilter
+    map.magFilter = LinearFilter
+    return map
+  }, [])
+  const skyUniforms = useMemo(() => ({ skyGain: { value: 1 } }), [])
+  skyUniforms.skyGain.value = brightness / 100
+  const onBeforeCompile = useMemo(() => {
+    return (shader: WebGLProgramParametersWithUniforms) => {
+      shader.uniforms.skyGain = skyUniforms.skyGain
+      shader.fragmentShader = `uniform float skyGain;\n${shader.fragmentShader}`.replace(
+        'vec3 outgoingLight = reflectedLight.indirectDiffuse;',
+        `vec3 outgoingLight = reflectedLight.indirectDiffuse;
+	float lum = max(outgoingLight.r, max(outgoingLight.g, outgoingLight.b));
+	float star = smoothstep(0.28, 0.78, lum);
+	float crush = mix(1.35, 1.0, skyGain);
+	vec3 dimmed = pow(max(outgoingLight, vec3(0.0)), vec3(crush)) * skyGain;
+	float pop = (1.0 - skyGain) * smoothstep(0.0, 0.08, skyGain);
+	outgoingLight = mix(dimmed, outgoingLight * mix(skyGain, 1.0, star), pop);`,
+      )
+    }
+  }, [skyUniforms])
   const holeMap = useMemo(() => {
     const map = new TextureLoader().load(BLACK_HOLE_URL)
     map.colorSpace = SRGBColorSpace
     return map
   }, [])
-  const coreOffset = radius * 0.96
-  const coreSize = Math.max(8, radius * 0.004)
 
   const arrowGeometry = useMemo(() => {
     const geo = new BufferGeometry()
@@ -81,7 +107,7 @@ export function MilkyWay({
     }
   }, [arrowGeometry, arrowMaterial, holeMap, texture])
 
-  useFrame((state) => {
+  useFrame(() => {
     const galactic = store.galactic
     xAxis.set(galactic.center[0], galactic.center[1], galactic.center[2])
     yAxis.set(galactic.north[0], galactic.north[1], galactic.north[2])
@@ -89,12 +115,6 @@ export function MilkyWay({
     if (skyRef.current) {
       basis.makeBasis(xAxis, yAxis, zAxis)
       skyRef.current.quaternion.setFromRotationMatrix(basis)
-    }
-    if (haloRef.current) {
-      const halo = haloRef.current.material
-      if (halo instanceof MeshBasicMaterial) {
-        halo.opacity = 0.16 + Math.sin(state.clock.elapsedTime * 0.28) * 0.05
-      }
     }
 
     if (!showAxes) return
@@ -132,43 +152,12 @@ export function MilkyWay({
           <meshBasicMaterial
             map={texture}
             side={BackSide}
-            transparent
             depthWrite={false}
-            opacity={0.7}
+            toneMapped={false}
+            onBeforeCompile={onBeforeCompile}
+            customProgramCacheKey={() => 'milky-way-sky-v2'}
           />
         </mesh>
-        <group position={[coreOffset, 0, 0]} scale={coreSize}>
-          <mesh>
-            <sphereGeometry args={[1.6, 32, 32]} />
-            <meshBasicMaterial
-              color="#4a1230"
-              transparent
-              opacity={0.45}
-              depthWrite={false}
-              blending={AdditiveBlending}
-            />
-          </mesh>
-          <mesh ref={haloRef}>
-            <sphereGeometry args={[3.6, 32, 32]} />
-            <meshBasicMaterial
-              color="#2a0c28"
-              transparent
-              opacity={0.16}
-              depthWrite={false}
-              blending={AdditiveBlending}
-            />
-          </mesh>
-          <mesh>
-            <sphereGeometry args={[6.4, 32, 32]} />
-            <meshBasicMaterial
-              color="#140818"
-              transparent
-              opacity={0.08}
-              depthWrite={false}
-              blending={AdditiveBlending}
-            />
-          </mesh>
-        </group>
       </group>
       {showAxes ? (
         <>

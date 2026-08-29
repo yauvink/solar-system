@@ -1,0 +1,8 @@
+NASA all-sky star map (public domain). Credit NASA / GSFC SVS.
+
+starmap.webp  Deep Star Maps 2020 galactic 4096×2048
+              https://svs.gsfc.nasa.gov/4851
+              NASA/Goddard Space Flight Center Scientific Visualization Studio
+              Hipparcos + Tycho + Gaia DR2, galactic coordinates
+              Tone-mapped from starmap_2020_4k_gal.exr
+              Center is the galactic center (l=0°, b=0°)

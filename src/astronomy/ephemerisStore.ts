@@ -31,7 +31,9 @@ export type EphemerisStore = {
   revision: number
 }
 
-export function createEphemerisStore(scale: ScaleSettings): EphemerisStore {
+export function createEphemerisStore(
+  scale: Pick<ScaleSettings, 'auInUnits' | 'bodyScale'>,
+): EphemerisStore {
   const dateMs = Date.now()
   const store: EphemerisStore = {
     dateMs,
