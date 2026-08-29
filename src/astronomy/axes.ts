@@ -3,7 +3,9 @@ import {
   MakeTime,
   RotateVector,
   RotationAxis,
+  Rotation_EQD_EQJ,
   Rotation_GAL_EQJ,
+  SiderealTime,
   Vector,
 } from 'astronomy-engine'
 import {
@@ -58,11 +60,58 @@ function tiltToEclipticPlaneDeg(direction: Vec3): number {
   return (Math.asin(Math.min(1, Math.max(-1, direction[1]))) * 180) / Math.PI
 }
 
+type Quat = [number, number, number, number]
+
+/** Same quaternion as Three.js `setFromUnitVectors((0,1,0), north)`. */
+function yUpToNorth(north: Vec3): Quat {
+  const r = north[1] + 1
+  if (r < 1e-8) return [0, 0, 1, 0]
+  const x = north[2]
+  const z = -north[0]
+  const len = Math.hypot(x, z, r)
+  return [x / len, 0, z / len, r / len]
+}
+
+function applyQuat(q: Quat, v: Vec3): Vec3 {
+  const [qx, qy, qz, qw] = q
+  const tx = 2 * (qy * v[2] - qz * v[1])
+  const ty = 2 * (qz * v[0] - qx * v[2])
+  const tz = 2 * (qx * v[1] - qy * v[0])
+  return [
+    v[0] + qw * tx + qy * tz - qz * ty,
+    v[1] + qw * ty + qz * tx - qx * tz,
+    v[2] + qw * tz + qx * ty - qy * tx,
+  ]
+}
+
+/**
+ * Y-rotation that puts the body +X meridian on `prime` after the north-pole tilt.
+ * Three.js `rotation.y` sends (1,0,0) to (cos θ, 0, −sin θ).
+ */
+function spinDegToPrime(north: Vec3, prime: Vec3): number {
+  const [qx, qy, qz, qw] = yUpToNorth(north)
+  const local = applyQuat([-qx, -qy, -qz, qw], prime)
+  return (Math.atan2(-local[2], local[0]) * 180) / Math.PI
+}
+
+/**
+ * Greenwich in the scene, from GAST. `RotationAxis.spin` is IAU W measured from a
+ * different zero than `setFromUnitVectors`, so using it raw lights the wrong longitudes.
+ */
+function earthPrimeScene(date: Date): Vec3 {
+  const time = MakeTime(date)
+  const gast = SiderealTime(time) * (Math.PI / 12)
+  const eqd = new Vector(Math.cos(gast), Math.sin(gast), 0, time)
+  const prime = vec3()
+  writeSceneDir(prime, RotateVector(Rotation_EQD_EQJ(time), eqd))
+  return prime
+}
+
 export function writeBodyAxis(out: BodyAxis, body: Body, date: Date): void {
   const axis = RotationAxis(body, date)
   writeSceneDir(out.north, axis.north)
   out.tiltDeg = tiltToEclipticDeg(out.north)
-  out.spinDeg = axis.spin
+  out.spinDeg = body === Body.Earth ? spinDegToPrime(out.north, earthPrimeScene(date)) : axis.spin
 }
 
 export function writePlanetAxes(out: Record<BodyId, BodyAxis>, date: Date): void {

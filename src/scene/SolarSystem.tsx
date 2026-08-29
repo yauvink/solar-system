@@ -113,7 +113,7 @@ export const SolarSystem = memo(function SolarSystem({
               key={`${id}-orbit`}
               points={planetOrbits[id]}
               color={BODY_BY_ID[id].orbitColor}
-              opacity={id === "neptune" || id === "uranus" ? 0.14 : 0.22}
+              opacity={id === "neptune" || id === "uranus" ? 0.22 : 0.36}
             />
           ))}
           {MOON_IDS.map((id) => (
@@ -122,7 +122,7 @@ export const SolarSystem = memo(function SolarSystem({
               points={moonOrbits[id]}
               getOffset={() => store.positions[MOON_BY_ID[id].parent]}
               color={MOON_BY_ID[id].orbitColor}
-              opacity={0.32}
+              opacity={0.48}
             />
           ))}
         </>

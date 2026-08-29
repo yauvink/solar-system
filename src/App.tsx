@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useBodyPositions } from './astronomy/useBodyPositions.ts'
 import {
   BODY_SCALE_MAX,
@@ -24,6 +24,7 @@ import { Controls, type GeoStatus } from './ui/Controls.tsx'
 
 const SHOW_AXES_KEY = 'solar-system:showAxes'
 const SCALE_KEY = 'solar-system:scale'
+const USER_GEO_KEY = 'solar-system:userGeo'
 
 function readStoredFlag(key: string, fallback = false): boolean {
   try {
@@ -52,6 +53,29 @@ function hideBootLoader(): void {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
+}
+
+function readStoredGeo(): GeoLocation | null {
+  try {
+    const raw = window.localStorage.getItem(USER_GEO_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<GeoLocation>
+    const lat = Number(parsed.lat)
+    const lon = Number(parsed.lon)
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null
+    return { lat, lon }
+  } catch {
+    return null
+  }
+}
+
+function writeStoredGeo(geo: GeoLocation): void {
+  try {
+    window.localStorage.setItem(USER_GEO_KEY, JSON.stringify(geo))
+  } catch {
+    // ignore quota / private mode
+  }
 }
 
 function readStoredScale(): ScaleSettings {
@@ -109,8 +133,10 @@ export default function App() {
   const cameraFar = cameraFarForScale(scale.auInUnits)
   const maxDistance = maxDistanceForScale(scale.auInUnits)
   const perseidCrossing = isPerseidCrossing(date)
-  const [userGeo, setUserGeo] = useState<GeoLocation | null>(null)
-  const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
+  const [userGeo, setUserGeo] = useState<GeoLocation | null>(readStoredGeo)
+  const [geoStatus, setGeoStatus] = useState<GeoStatus>(() => (readStoredGeo() ? 'ready' : 'idle'))
+  const userGeoRef = useRef(userGeo)
+  userGeoRef.current = userGeo
 
   const handleFocus = useCallback((id: FocusId) => {
     setFocus(id)
@@ -150,31 +176,65 @@ export default function App() {
     return () => window.clearTimeout(timer)
   }, [])
 
+  const applyUserGeo = useCallback((geo: GeoLocation) => {
+    setUserGeo(geo)
+    setGeoStatus('ready')
+    writeStoredGeo(geo)
+  }, [])
+
+  const requestUserGeo = useCallback(
+    (focusEarth: boolean) => {
+      if (!navigator.geolocation) {
+        setGeoStatus('unavailable')
+        return
+      }
+      if (focusEarth) setGeoStatus('pending')
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          applyUserGeo({
+            lat: position.coords.latitude,
+            lon: position.coords.longitude,
+          })
+          if (focusEarth) handleFocus('earth')
+        },
+        (error) => {
+          if (userGeoRef.current) {
+            setGeoStatus('ready')
+            if (focusEarth) handleFocus('earth')
+            return
+          }
+          setGeoStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable')
+        },
+        { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 },
+      )
+    },
+    [applyUserGeo, handleFocus],
+  )
+
+  useEffect(() => {
+    const permissions = navigator.permissions
+    if (!permissions?.query) return
+    let cancelled = false
+    permissions
+      .query({ name: 'geolocation' })
+      .then((result) => {
+        if (!cancelled && result.state === 'granted') requestUserGeo(false)
+      })
+      .catch(() => {
+        // Safari and some embeds omit geolocation from Permissions API.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [requestUserGeo])
+
   const handleWhereAmI = useCallback(() => {
     if (userGeo) {
       handleFocus('earth')
       return
     }
-    if (!navigator.geolocation) {
-      setGeoStatus('unavailable')
-      return
-    }
-    setGeoStatus('pending')
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setUserGeo({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
-        })
-        setGeoStatus('ready')
-        handleFocus('earth')
-      },
-      (error) => {
-        setGeoStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable')
-      },
-      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 },
-    )
-  }, [handleFocus, userGeo])
+    requestUserGeo(true)
+  }, [handleFocus, requestUserGeo, userGeo])
 
   return (
     <div className="app">
