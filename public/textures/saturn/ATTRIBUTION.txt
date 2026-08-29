@@ -1,0 +1,11 @@
+NASA / ESA Saturn map. Credit NASA / ESA / STScI / OPAL.
+
+color.webp  Hubble WFC3 color composite, 2025 rotation A, 1800×900
+            Filters F395N + F502N + F631N
+            Source: hlsp_opal_hst_wfc3-uvis_saturn-2025a_f395n-f502n-f631n_v1_globalmap.tif
+            Equirectangular. Ring-shadow equator and unobserved poles were filled
+            from neighboring latitudes.
+
+https://archive.stsci.edu/hlsp/opal
+DOI: 10.17909/T9G593
+NASA/ESA Hubble Space Telescope, OPAL program (PI: Simon)

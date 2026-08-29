@@ -541,11 +541,11 @@ export function Controls({
 
       <p className="hud-credit">
         <a
-          href="https://svs.gsfc.nasa.gov/"
+          href="https://science.nasa.gov/"
           target="_blank"
           rel="noreferrer"
         >
-          Imagery · NASA / GSFC SVS
+          Imagery · NASA / USGS / ESA
         </a>
       </p>
     </div>

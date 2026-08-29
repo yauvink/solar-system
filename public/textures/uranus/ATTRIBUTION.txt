@@ -1,0 +1,11 @@
+NASA / ESA Uranus map. Credit NASA / ESA / STScI / OPAL.
+
+color.webp  Hubble WFC3 color composite, 2014 rotation A, scaled to 1024×512
+            Filters F467M + F547M + F658N
+            Source: hlsp_opal_hst_wfc3-uvis_uranus-2014a_f467m-f547m-f658n_v1_globalmap.tif
+            Equirectangular. Voyager and Hubble only see one hemisphere well;
+            unobserved southern latitudes were extended from the last clean row.
+
+https://archive.stsci.edu/hlsp/opal
+DOI: 10.17909/T9G593
+NASA/ESA Hubble Space Telescope, OPAL program (PI: Simon)

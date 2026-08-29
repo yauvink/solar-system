@@ -1,0 +1,9 @@
+NASA / ESA Jupiter map (public domain). Credit NASA / ESA / GSFC SVS.
+
+color.webp  Hubble WFC3 global color map, 2015 rotation A, 2048×1024
+            Source: Hubble_Jupiter_color_global_map_2015a.tif (3600×1800)
+            Equirectangular, OPAL program
+
+https://svs.gsfc.nasa.gov/12021/
+NASA/Goddard Space Flight Center Scientific Visualization Studio
+Hubble Space Telescope; Outer Planet Atmospheres Legacy (OPAL)

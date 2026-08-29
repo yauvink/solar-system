@@ -1,0 +1,9 @@
+NASA / USGS Mercury color map (public domain). Credit NASA / JHUAPL / Carnegie / USGS.
+
+color.webp  MESSENGER MDIS Global Color Mosaic (1024×512 sample)
+            Equirectangular, enhanced color
+            A few mosaic gaps were filled from neighboring pixels
+
+https://astrogeology.usgs.gov/search/map/mercury_messenger_mdis_global_color_mosaic_665m
+NASA / Johns Hopkins APL / Carnegie Institution of Washington
+USGS Astrogeology Science Center

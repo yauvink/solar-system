@@ -16,7 +16,15 @@ import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
 import { BodyLabel } from './BodyLabel.tsx'
 import { createPlanetTexture } from './createBodyTexture.ts'
 
-const MARS_MAP_URL = `${import.meta.env.BASE_URL}textures/mars/color.jpg`
+const PLANET_MAP_URL: Partial<Record<PlanetId, string>> = {
+  mercury: `${import.meta.env.BASE_URL}textures/mercury/color.webp`,
+  venus: `${import.meta.env.BASE_URL}textures/venus/color.webp`,
+  mars: `${import.meta.env.BASE_URL}textures/mars/color.webp`,
+  jupiter: `${import.meta.env.BASE_URL}textures/jupiter/color.webp`,
+  saturn: `${import.meta.env.BASE_URL}textures/saturn/color.webp`,
+  uranus: `${import.meta.env.BASE_URL}textures/uranus/color.webp`,
+  neptune: `${import.meta.env.BASE_URL}textures/neptune/color.webp`,
+}
 
 type PlanetProps = {
   id: PlanetId
@@ -32,24 +40,25 @@ export function Planet({ id, store, radius }: PlanetProps) {
   const groupRef = useRef<Group>(null)
   const spinRef = useRef<Mesh>(null)
   const fallback = useMemo(() => createPlanetTexture(id), [id])
-  const nasaMars = useMemo(() => {
-    if (id !== 'mars') return null
-    const map = new TextureLoader().load(MARS_MAP_URL)
+  const mapUrl = PLANET_MAP_URL[id]
+  const nasaMap = useMemo(() => {
+    if (!mapUrl) return null
+    const map = new TextureLoader().load(mapUrl)
     map.wrapS = RepeatWrapping
     map.wrapT = ClampToEdgeWrapping
     map.colorSpace = SRGBColorSpace
     map.anisotropy = 8
     return map
-  }, [id])
-  const texture = nasaMars ?? fallback
-  const segments = id === 'mars' ? 64 : 48
+  }, [mapUrl])
+  const texture = nasaMap ?? fallback
+  const segments = nasaMap ? 64 : 48
 
   useLayoutEffect(() => {
     return () => {
       fallback.dispose()
-      nasaMars?.dispose()
+      nasaMap?.dispose()
     }
-  }, [fallback, nasaMars])
+  }, [fallback, nasaMap])
 
   useFrame(() => {
     const position = store.positions[id]
@@ -71,11 +80,11 @@ export function Planet({ id, store, radius }: PlanetProps) {
           <sphereGeometry args={[1, segments, segments]} />
           <meshStandardMaterial
             map={texture}
-            roughness={id === 'mars' ? 0.88 : 0.62}
-            metalness={id === 'mars' ? 0 : 0.02}
-            emissiveMap={nasaMars ?? undefined}
-            emissive={nasaMars ? '#ffffff' : '#000000'}
-            emissiveIntensity={nasaMars ? 0.18 : 0}
+            roughness={nasaMap ? 0.88 : 0.62}
+            metalness={nasaMap ? 0 : 0.02}
+            emissiveMap={nasaMap ?? undefined}
+            emissive={nasaMap ? '#ffffff' : '#000000'}
+            emissiveIntensity={nasaMap ? 0.18 : 0}
           />
         </mesh>
         {id === 'saturn' ? (

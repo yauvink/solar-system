@@ -1,0 +1,9 @@
+NASA Venus radar map (public domain). Credit NASA / JPL.
+
+color.webp  Magellan synthetic-aperture radar mosaic, 1440×720
+            NASA 3D Resources globe texture
+            Equirectangular, orange radar albedo (not optical color)
+
+https://science.nasa.gov/3d-resources/venus/
+https://github.com/nasa/NASA-3D-Resources
+NASA / Jet Propulsion Laboratory

@@ -922,8 +922,8 @@ body,
 .space-loader-stars::after {
   content: '';
   position: absolute;
-  width: 2px;
-  height: 2px;
+  width: 1px;
+  height: 1px;
   border-radius: 50%;
   background: #fff;
   box-shadow:

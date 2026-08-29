@@ -1,0 +1,9 @@
+NASA Neptune globe texture (public domain). Credit NASA / JPL.
+
+color.webp  NASA 3D Resources Neptune map, scaled to 1024×512
+            Voyager-based visualization prepared as an equirectangular globe texture
+            (JPL 3D Resources catalog; not a single raw flyby frame)
+
+https://science.nasa.gov/3d-resources/neptune/
+https://github.com/nasa/NASA-3D-Resources
+NASA / Jet Propulsion Laboratory

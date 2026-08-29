@@ -1,7 +1,7 @@
 NASA / USGS Mars color map (public domain). Credit NASA / JPL / USGS.
 
-color.jpg  Viking Colorized MDIM 2.1 2048×1024
-           https://astrogeology.usgs.gov/search/map/mars_viking_colorized_global_mosaic_232m
-           NASA Ames / USGS Astrogeology Science Center
-           Viking Orbiter VIS, colorized onto MDIM 2.1
-           Equirectangular, centered on 0° longitude (Airy-0)
+color.webp  Viking Colorized MDIM 2.1 2048×1024
+            https://astrogeology.usgs.gov/search/map/mars_viking_colorized_global_mosaic_232m
+            NASA Ames / USGS Astrogeology Science Center
+            Viking Orbiter VIS, colorized onto MDIM 2.1
+            Equirectangular, centered on 0° longitude (Airy-0)
