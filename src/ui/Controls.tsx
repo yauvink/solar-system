@@ -23,6 +23,7 @@ import {
   type ScaleSettings,
 } from "../astronomy/scale.ts";
 import type { FocusId } from "../scene/CameraRig.tsx";
+import { ObjectFacts } from "./ObjectFacts.tsx";
 
 export type GeoStatus = "idle" | "pending" | "ready" | "denied" | "unavailable";
 
@@ -243,6 +244,7 @@ export function Controls({
 
   return (
     <div className="hud">
+      <ObjectFacts focus={focus} />
       {narrow && (openPanels.scale || openPanels.objects) ? (
         <button
           type="button"
