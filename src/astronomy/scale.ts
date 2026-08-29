@@ -1,4 +1,4 @@
-import { RADIUS_KM, type BodyId } from './bodies.ts'
+import { RADIUS_KM, SYSTEM_BODY_IDS, type BodyId, type PlanetId } from './bodies.ts'
 
 /** Kilometers in one astronomical unit. */
 export const KM_PER_AU = 149_597_870.7
@@ -10,9 +10,12 @@ export type ScaleSettings = {
 
 export type BodyRadii = Record<BodyId, number>
 
+export const BODY_SCALE_MIN = 1
+export const BODY_SCALE_MAX = 30
+
 export const DEFAULT_SCALE: ScaleSettings = {
   auInUnits: 100,
-  bodyScale: 30,
+  bodyScale: BODY_SCALE_MAX,
 }
 
 export function auToDistanceUnits(au: number, auInUnits: number): number {
@@ -22,18 +25,21 @@ export function auToDistanceUnits(au: number, auInUnits: number): number {
 export function getBodyRadii(settings: ScaleSettings): BodyRadii {
   const kmPerUnit = KM_PER_AU / settings.auInUnits
   const toUnits = (km: number) => (km / kmPerUnit) * settings.bodyScale
+  return Object.fromEntries(
+    SYSTEM_BODY_IDS.map((id) => [id, toUnits(RADIUS_KM[id])]),
+  ) as BodyRadii
+}
 
+export function planetRadiiMap(radii: BodyRadii): Record<PlanetId, number> {
   return {
-    sun: toUnits(RADIUS_KM.sun),
-    mercury: toUnits(RADIUS_KM.mercury),
-    venus: toUnits(RADIUS_KM.venus),
-    earth: toUnits(RADIUS_KM.earth),
-    moon: toUnits(RADIUS_KM.moon),
-    mars: toUnits(RADIUS_KM.mars),
-    jupiter: toUnits(RADIUS_KM.jupiter),
-    saturn: toUnits(RADIUS_KM.saturn),
-    uranus: toUnits(RADIUS_KM.uranus),
-    neptune: toUnits(RADIUS_KM.neptune),
+    mercury: radii.mercury,
+    venus: radii.venus,
+    earth: radii.earth,
+    mars: radii.mars,
+    jupiter: radii.jupiter,
+    saturn: radii.saturn,
+    uranus: radii.uranus,
+    neptune: radii.neptune,
   }
 }
 

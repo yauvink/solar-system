@@ -1,9 +1,16 @@
-import { Body, GeoVector, HelioVector, PlanetOrbitalPeriod } from 'astronomy-engine'
-import { PLANET_IDS, type PlanetId } from './bodies.ts'
-import { writeScene } from './positions.ts'
+import { HelioVector, PlanetOrbitalPeriod } from 'astronomy-engine'
+import {
+  MOON_DEFS,
+  MOON_IDS,
+  PLANET_ENGINE,
+  PLANET_IDS,
+  type MoonId,
+  type PlanetId,
+} from './bodies.ts'
+import { moonOffset, moonSystemScale } from './moons.ts'
+import { writeScene, type Vec3 } from './positions.ts'
 
 const DAY_MS = 86_400_000
-const SIDEREAL_MONTH_DAYS = 27.321661
 
 export const ORBIT_SEGMENTS = 160
 
@@ -28,16 +35,7 @@ function sampleClosedPath(
 
 /** Heliocentric path over one sidereal period — the real oval, not a circle. */
 export function createPlanetOrbitPath(id: PlanetId, date: Date, auInUnits: number): Float32Array {
-  const engine = {
-    mercury: Body.Mercury,
-    venus: Body.Venus,
-    earth: Body.Earth,
-    mars: Body.Mars,
-    jupiter: Body.Jupiter,
-    saturn: Body.Saturn,
-    uranus: Body.Uranus,
-    neptune: Body.Neptune,
-  }[id]
+  const engine = PLANET_ENGINE[id]
   const out = new Float32Array((ORBIT_SEGMENTS + 1) * 3)
   sampleClosedPath(out, date.getTime(), PlanetOrbitalPeriod(engine), (t) => {
     writeScene(scratch, HelioVector(engine, t), auInUnits)
@@ -45,19 +43,48 @@ export function createPlanetOrbitPath(id: PlanetId, date: Date, auInUnits: numbe
   return out
 }
 
-/** Moon path relative to Earth over one sidereal month. */
-export function createMoonOrbitRelative(date: Date, auInUnits: number): Float32Array {
+export function createMoonOrbitRelative(
+  id: MoonId,
+  date: Date,
+  auInUnits: number,
+  parentNorth: Vec3,
+  orbitScale: number,
+): Float32Array {
+  const def = MOON_DEFS.find((moon) => moon.id === id)
+  if (!def) return new Float32Array((ORBIT_SEGMENTS + 1) * 3)
   const out = new Float32Array((ORBIT_SEGMENTS + 1) * 3)
-  sampleClosedPath(out, date.getTime(), SIDEREAL_MONTH_DAYS, (t) => {
-    writeScene(scratch, GeoVector(Body.Moon, t, false), auInUnits)
+  sampleClosedPath(out, date.getTime(), def.periodDays, (t) => {
+    const offset = moonOffset(id, parentNorth, auInUnits, orbitScale, t)
+    scratch[0] = offset[0]
+    scratch[1] = offset[1]
+    scratch[2] = offset[2]
   })
   return out
 }
 
-export function createAllPlanetOrbitPaths(date: Date, auInUnits: number): Record<PlanetId, Float32Array> {
+export function createAllPlanetOrbitPaths(
+  date: Date,
+  auInUnits: number,
+): Record<PlanetId, Float32Array> {
   return Object.fromEntries(
     PLANET_IDS.map((id) => [id, createPlanetOrbitPath(id, date, auInUnits)]),
   ) as Record<PlanetId, Float32Array>
+}
+
+export function createAllMoonOrbitPaths(
+  date: Date,
+  auInUnits: number,
+  parentNorth: Record<PlanetId, Vec3>,
+  parentRadii: Record<PlanetId, number>,
+): Record<MoonId, Float32Array> {
+  const scales: Partial<Record<PlanetId, number>> = {}
+  return Object.fromEntries(
+    MOON_IDS.map((id) => {
+      const parent = MOON_DEFS.find((moon) => moon.id === id)!.parent
+      const scale = (scales[parent] ??= moonSystemScale(parent, parentRadii[parent], auInUnits))
+      return [id, createMoonOrbitRelative(id, date, auInUnits, parentNorth[parent], scale)]
+    }),
+  ) as Record<MoonId, Float32Array>
 }
 
 /** Rebuild at most once per civil day so scrubbing stays cheap. */

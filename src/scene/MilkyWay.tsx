@@ -63,7 +63,7 @@ export function MilkyWay({
   }, [])
 
   const arrowMaterial = useMemo(
-    () => new LineBasicMaterial({ color: '#f0c36a', transparent: true, opacity: 0.9 }),
+    () => new LineBasicMaterial({ color: '#f0c36a', transparent: true, opacity: 0.32 }),
     [],
   )
   const arrow = useMemo(() => {

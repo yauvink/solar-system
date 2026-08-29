@@ -12,12 +12,18 @@ import {
   type Texture,
 } from 'three'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
-import { BodyLabel } from './BodyLabel.tsx'
+import { BodyLabel, ScreenBillboardText } from './BodyLabel.tsx'
 import { createEarthTexture } from './createBodyTexture.ts'
+
+export type GeoLocation = {
+  lat: number
+  lon: number
+}
 
 type EarthProps = {
   store: EphemerisStore
   radius: number
+  userGeo?: GeoLocation | null
 }
 
 type EarthMaps = {
@@ -29,6 +35,18 @@ type EarthMaps = {
 const yUp = new Vector3(0, 1, 0)
 const northDir = new Vector3()
 const orient = new Quaternion()
+const pinUp = new Quaternion()
+const pinDir = new Vector3()
+
+/** Equirectangular NASA maps on Three.js SphereGeometry: lon 0° at +X, lat 90° at +Y. */
+function latLonOnSphere(lat: number, lon: number, radius: number): Vector3 {
+  const latRad = (lat * Math.PI) / 180
+  const lonRad = (lon * Math.PI) / 180
+  const phi = lonRad + Math.PI
+  const theta = Math.PI / 2 - latRad
+  const ring = Math.sin(theta)
+  return new Vector3(-Math.cos(phi) * ring * radius, Math.cos(theta) * radius, Math.sin(phi) * ring * radius)
+}
 
 const DAY_URL = `${import.meta.env.BASE_URL}textures/earth/day.png`
 const NIGHT_URL = `${import.meta.env.BASE_URL}textures/earth/night.png`
@@ -112,7 +130,44 @@ function useNasaEarthMaps(): EarthMaps | null {
   return maps
 }
 
-export function Earth({ store, radius }: EarthProps) {
+function YouAreHere({ lat, lon }: GeoLocation) {
+  const { position, rotation } = useMemo(() => {
+    const position = latLonOnSphere(lat, lon, 1.04)
+    pinDir.copy(position).normalize()
+    return {
+      position,
+      rotation: pinUp.setFromUnitVectors(yUp, pinDir).clone(),
+    }
+  }, [lat, lon])
+
+  return (
+    <group position={position} quaternion={rotation}>
+      <mesh>
+        <cylinderGeometry args={[0.008, 0.008, 0.055, 8]} />
+        <meshBasicMaterial color="#f0c36a" />
+      </mesh>
+      <mesh position={[0, 0.048, 0]}>
+        <sphereGeometry args={[0.028, 14, 14]} />
+        <meshBasicMaterial color="#ff5a4a" />
+      </mesh>
+      <mesh position={[0, 0.048, 0]}>
+        <sphereGeometry args={[0.052, 12, 12]} />
+        <meshBasicMaterial
+          color="#ff8a6a"
+          transparent
+          opacity={0.35}
+          depthWrite={false}
+          blending={AdditiveBlending}
+        />
+      </mesh>
+      <group position={[0, 0.1, 0]}>
+        <ScreenBillboardText color="#f0c36a">You</ScreenBillboardText>
+      </group>
+    </group>
+  )
+}
+
+export function Earth({ store, radius, userGeo }: EarthProps) {
   const groupRef = useRef<Group>(null)
   const spinRef = useRef<Group>(null)
   const fallback = useMemo(() => createEarthTexture(), [])
@@ -174,6 +229,7 @@ export function Earth({ store, radius }: EarthProps) {
               />
             </mesh>
           ) : null}
+          {userGeo ? <YouAreHere lat={userGeo.lat} lon={userGeo.lon} /> : null}
           {maps ? (
             <mesh scale={1.018}>
               <sphereGeometry args={[1, 64, 64]} />

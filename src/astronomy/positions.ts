@@ -1,5 +1,14 @@
-import { Body, GeoVector, HelioVector, RotateVector, Rotation_EQJ_ECL, type Vector } from 'astronomy-engine'
-import { PLANET_IDS, type BodyId, type PlanetId } from './bodies.ts'
+import { HelioVector, RotateVector, Rotation_EQJ_ECL, type Vector } from 'astronomy-engine'
+import {
+  MOON_IDS,
+  PLANET_ENGINE,
+  PLANET_IDS,
+  SYSTEM_BODY_IDS,
+  type BodyId,
+  type MoonId,
+  type PlanetId,
+} from './bodies.ts'
+import { writeMoonPositions } from './moons.ts'
 import { auToDistanceUnits } from './scale.ts'
 
 export type Vec3 = [number, number, number]
@@ -65,33 +74,20 @@ export function writeSceneDir(out: Vec3, vector: Vector): void {
 }
 
 export function createBodyPositions(): BodyPositions {
-  return {
-    sun: vec3(),
-    mercury: vec3(),
-    venus: vec3(),
-    earth: vec3(),
-    moon: vec3(),
-    mars: vec3(),
-    jupiter: vec3(),
-    saturn: vec3(),
-    uranus: vec3(),
-    neptune: vec3(),
-    moonOrbitRadius: 0,
-  }
+  const positions = Object.fromEntries(SYSTEM_BODY_IDS.map((id) => [id, vec3()])) as Record<
+    BodyId,
+    Vec3
+  >
+  return { ...positions, moonOrbitRadius: 0 }
 }
 
-const PLANET_ENGINE: Record<PlanetId, Body> = {
-  mercury: Body.Mercury,
-  venus: Body.Venus,
-  earth: Body.Earth,
-  mars: Body.Mars,
-  jupiter: Body.Jupiter,
-  saturn: Body.Saturn,
-  uranus: Body.Uranus,
-  neptune: Body.Neptune,
-}
-
-export function writeBodyPositions(out: BodyPositions, date: Date, auInUnits: number): void {
+export function writeBodyPositions(
+  out: BodyPositions,
+  date: Date,
+  auInUnits: number,
+  parentRadii: Record<PlanetId, number>,
+  parentNorth: Record<PlanetId, Vec3>,
+): void {
   out.sun[0] = 0
   out.sun[1] = 0
   out.sun[2] = 0
@@ -100,11 +96,9 @@ export function writeBodyPositions(out: BodyPositions, date: Date, auInUnits: nu
     writeScene(out[id], HelioVector(PLANET_ENGINE[id], date), auInUnits)
   }
 
-  const moonOffset = toScene(GeoVector(Body.Moon, date, false), auInUnits)
-  out.moon[0] = out.earth[0] + moonOffset[0]
-  out.moon[1] = out.earth[1] + moonOffset[1]
-  out.moon[2] = out.earth[2] + moonOffset[2]
+  const planets = Object.fromEntries(PLANET_IDS.map((id) => [id, out[id]])) as Record<PlanetId, Vec3>
+  const moons = Object.fromEntries(MOON_IDS.map((id) => [id, out[id]])) as Record<MoonId, Vec3>
+  writeMoonPositions(moons, planets, parentNorth, parentRadii, auInUnits, date)
+
   out.moonOrbitRadius = length(sub(out.moon, out.earth))
 }
-
-

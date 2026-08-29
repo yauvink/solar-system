@@ -1,12 +1,19 @@
 import {
+  Body,
   MakeTime,
   RotateVector,
   RotationAxis,
   Rotation_GAL_EQJ,
   Vector,
-  type Body,
 } from 'astronomy-engine'
-import { SYSTEM_BODIES, type BodyId } from './bodies.ts'
+import {
+  MOON_DEFS,
+  PLANET_ENGINE,
+  PLANET_IDS,
+  SYSTEM_BODY_IDS,
+  type BodyId,
+  type PlanetId,
+} from './bodies.ts'
 import { dot, ECLIPTIC_NORTH, writeSceneDir, type Vec3, vec3 } from './positions.ts'
 
 export type BodyAxis = {
@@ -27,18 +34,10 @@ export function createBodyAxis(): BodyAxis {
 }
 
 export function createAxesMap(): Record<BodyId, BodyAxis> {
-  return {
-    sun: createBodyAxis(),
-    mercury: createBodyAxis(),
-    venus: createBodyAxis(),
-    earth: createBodyAxis(),
-    moon: createBodyAxis(),
-    mars: createBodyAxis(),
-    jupiter: createBodyAxis(),
-    saturn: createBodyAxis(),
-    uranus: createBodyAxis(),
-    neptune: createBodyAxis(),
-  }
+  return Object.fromEntries(SYSTEM_BODY_IDS.map((id) => [id, createBodyAxis()])) as Record<
+    BodyId,
+    BodyAxis
+  >
 }
 
 export function createGalacticFrame(): GalacticFrame {
@@ -66,10 +65,29 @@ export function writeBodyAxis(out: BodyAxis, body: Body, date: Date): void {
   out.spinDeg = axis.spin
 }
 
-export function writeAllBodyAxes(out: Record<BodyId, BodyAxis>, date: Date): void {
-  for (const def of SYSTEM_BODIES) {
-    writeBodyAxis(out[def.id], def.engine, date)
+export function writePlanetAxes(out: Record<BodyId, BodyAxis>, date: Date): void {
+  writeBodyAxis(out.sun, Body.Sun, date)
+  for (const id of PLANET_IDS) {
+    writeBodyAxis(out[id], PLANET_ENGINE[id], date)
   }
+}
+
+export function writeMoonAxes(out: Record<BodyId, BodyAxis>, date: Date): void {
+  writeBodyAxis(out.moon, Body.Moon, date)
+  const days = date.getTime() / 86_400_000
+  for (const moon of MOON_DEFS) {
+    if (moon.id === 'moon') continue
+    const parent = out[moon.parent]
+    out[moon.id].north[0] = parent.north[0]
+    out[moon.id].north[1] = parent.north[1]
+    out[moon.id].north[2] = parent.north[2]
+    out[moon.id].tiltDeg = parent.tiltDeg
+    out[moon.id].spinDeg = ((days / moon.periodDays) * 360) % 360
+  }
+}
+
+export function planetNorthMap(axes: Record<BodyId, BodyAxis>): Record<PlanetId, Vec3> {
+  return Object.fromEntries(PLANET_IDS.map((id) => [id, axes[id].north])) as Record<PlanetId, Vec3>
 }
 
 export function writeGalacticFrame(out: GalacticFrame): void {

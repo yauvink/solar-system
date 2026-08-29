@@ -2,6 +2,8 @@ import { Canvas } from '@react-three/fiber'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useBodyPositions } from './astronomy/useBodyPositions.ts'
 import {
+  BODY_SCALE_MAX,
+  BODY_SCALE_MIN,
   cameraFarForScale,
   DEFAULT_SCALE,
   getBodyRadii,
@@ -11,9 +13,11 @@ import {
 } from './astronomy/scale.ts'
 import { isPerseidCrossing } from './astronomy/perseids.ts'
 import { SolarSystem } from './scene/SolarSystem.tsx'
+import { SceneReady } from './scene/SceneReady.tsx'
 import { writeFocusPose, type FocusId } from './scene/CameraRig.tsx'
+import type { GeoLocation } from './scene/Earth.tsx'
 import { Vector3 } from 'three'
-import { Controls } from './ui/Controls.tsx'
+import { Controls, type GeoStatus } from './ui/Controls.tsx'
 
 const SHOW_AXES_KEY = 'solar-system:showAxes'
 const SHOW_DEGREES_KEY = 'solar-system:showDegrees'
@@ -37,6 +41,13 @@ function writeStoredFlag(key: string, value: boolean): void {
   }
 }
 
+function hideBootLoader(): void {
+  const loader = document.getElementById('space-loader')
+  if (!loader || loader.classList.contains('is-done')) return
+  loader.classList.add('is-done')
+  window.setTimeout(() => loader.remove(), 700)
+}
+
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value))
 }
@@ -48,7 +59,11 @@ function readStoredScale(): ScaleSettings {
     const parsed = JSON.parse(raw) as Partial<ScaleSettings>
     return {
       auInUnits: clamp(Number(parsed.auInUnits) || DEFAULT_SCALE.auInUnits, 20, 250),
-      bodyScale: clamp(Number(parsed.bodyScale) || DEFAULT_SCALE.bodyScale, 1, 80),
+      bodyScale: clamp(
+        Number(parsed.bodyScale) || DEFAULT_SCALE.bodyScale,
+        BODY_SCALE_MIN,
+        BODY_SCALE_MAX,
+      ),
     }
   } catch {
     return DEFAULT_SCALE
@@ -59,6 +74,7 @@ export default function App() {
   const [scale, setScale] = useState<ScaleSettings>(readStoredScale)
   const { store, date, live, positions, goLive, setCustomDate, setSpeed } = useBodyPositions(
     scale.auInUnits,
+    scale.bodyScale,
   )
   const radii = useMemo(() => getBodyRadii(scale), [scale])
   const [focus, setFocus] = useState<FocusId>('earth')
@@ -81,6 +97,8 @@ export default function App() {
   const cameraFar = cameraFarForScale(scale.auInUnits)
   const maxDistance = maxDistanceForScale(scale.auInUnits)
   const perseidCrossing = isPerseidCrossing(date)
+  const [userGeo, setUserGeo] = useState<GeoLocation | null>(null)
+  const [geoStatus, setGeoStatus] = useState<GeoStatus>('idle')
 
   const handleFocus = useCallback((id: FocusId) => {
     setFocus(id)
@@ -120,6 +138,41 @@ export default function App() {
     }
   }, [scale])
 
+  const handleSceneReady = useCallback(() => {
+    hideBootLoader()
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setTimeout(hideBootLoader, 12_000)
+    return () => window.clearTimeout(timer)
+  }, [])
+
+  const handleWhereAmI = useCallback(() => {
+    if (userGeo) {
+      handleFocus('earth')
+      return
+    }
+    if (!navigator.geolocation) {
+      setGeoStatus('unavailable')
+      return
+    }
+    setGeoStatus('pending')
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserGeo({
+          lat: position.coords.latitude,
+          lon: position.coords.longitude,
+        })
+        setGeoStatus('ready')
+        handleFocus('earth')
+      },
+      (error) => {
+        setGeoStatus(error.code === error.PERMISSION_DENIED ? 'denied' : 'unavailable')
+      },
+      { enableHighAccuracy: false, maximumAge: 300_000, timeout: 10_000 },
+    )
+  }, [handleFocus, userGeo])
+
   return (
     <div className="app">
       <div className="viewport">
@@ -127,6 +180,7 @@ export default function App() {
         camera={{ position: startCamera.position, fov: 48, near: 0.01, far: cameraFar }}
         gl={{ antialias: true }}
       >
+        <SceneReady onReady={handleSceneReady} />
         <SolarSystem
           store={store}
           radii={radii}
@@ -140,6 +194,7 @@ export default function App() {
           auInUnits={scale.auInUnits}
           perseidCrossing={perseidCrossing}
           startTarget={startCamera.target}
+          userGeo={userGeo}
         />
       </Canvas>
       </div>
@@ -160,6 +215,8 @@ export default function App() {
         showDegrees={showDegrees}
         onShowAxesChange={handleShowAxes}
         onShowDegreesChange={handleShowDegrees}
+        geoStatus={geoStatus}
+        onWhereAmI={handleWhereAmI}
       />
     </div>
   )

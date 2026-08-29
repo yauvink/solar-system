@@ -1,14 +1,28 @@
 import type { PointerEvent } from "react";
 import { useEffect, useState } from "react";
-import { SYSTEM_BODIES, type BodyId } from "../astronomy/bodies.ts";
+import {
+  isMoonId,
+  MOON_BY_ID,
+  MOONS_BY_PARENT,
+  PRIMARY_BODIES,
+  isPlanetId,
+  type BodyId,
+} from "../astronomy/bodies.ts";
 import {
   SCRUB_FAST_DAYS_PER_SEC,
   SCRUB_FINE_DAYS_PER_SEC,
   SCRUB_SLOW_DAYS_PER_SEC,
 } from "../astronomy/ephemerisStore.ts";
 import type { BodyPositions } from "../astronomy/positions.ts";
-import type { BodyRadii, ScaleSettings } from "../astronomy/scale.ts";
+import {
+  BODY_SCALE_MAX,
+  BODY_SCALE_MIN,
+  type BodyRadii,
+  type ScaleSettings,
+} from "../astronomy/scale.ts";
 import type { FocusId } from "../scene/CameraRig.tsx";
+
+export type GeoStatus = "idle" | "pending" | "ready" | "denied" | "unavailable";
 
 type ControlsProps = {
   date: Date;
@@ -27,6 +41,8 @@ type ControlsProps = {
   showDegrees: boolean;
   onShowAxesChange: (value: boolean) => void;
   onShowDegreesChange: (value: boolean) => void;
+  geoStatus: GeoStatus;
+  onWhereAmI: () => void;
 };
 
 type PanelId = "system" | "scale" | "objects";
@@ -34,11 +50,6 @@ type PanelId = "system" | "scale" | "objects";
 type OpenPanels = Record<PanelId, boolean>;
 
 const NARROW_QUERY = "(max-width: 840px)";
-
-const FOCUS_ITEMS: { id: FocusId; label: string }[] = SYSTEM_BODIES.map((body) => ({
-  id: body.id,
-  label: body.label,
-}));
 
 function isNarrowViewport(): boolean {
   return (
@@ -62,8 +73,17 @@ function useNarrowViewport(): boolean {
 }
 
 function BodySwatch({ id }: { id: FocusId }) {
-  const kind = id === "reset" ? "reset" : (id as BodyId);
-  return <span className={`body-swatch body-swatch-${kind}`} aria-hidden />;
+  if (id === "reset") return <span className="body-swatch body-swatch-reset" aria-hidden />;
+  if (isMoonId(id)) {
+    return (
+      <span
+        className="body-swatch"
+        style={{ background: `radial-gradient(circle at 35% 30%, #fff8, ${MOON_BY_ID[id].swatch})` }}
+        aria-hidden
+      />
+    );
+  }
+  return <span className={`body-swatch body-swatch-${id as BodyId}`} aria-hidden />;
 }
 
 function Chevron({ dir }: { dir: "left" | "right" }) {
@@ -163,12 +183,21 @@ export function Controls({
   showDegrees,
   onShowAxesChange,
   onShowDegreesChange,
+  geoStatus,
+  onWhereAmI,
 }: ControlsProps) {
   const overlap = radii.earth + radii.moon > positions.moonOrbitRadius;
   const dateValue = toDateInputValue(date);
   const timeValue = toTimeInputValue(date);
   const narrow = useNarrowViewport();
   const [openPanels, setOpenPanels] = useState<OpenPanels>(defaultOpenPanels);
+
+  useEffect(() => {
+    if (!narrow || geoStatus !== "ready") return;
+    setOpenPanels((current) =>
+      current.objects ? { ...current, objects: false } : current,
+    );
+  }, [geoStatus, narrow]);
 
   useEffect(() => {
     if (!narrow) return;
@@ -241,8 +270,8 @@ export function Controls({
             <Slider
               label="Body sizes"
               value={scale.bodyScale}
-              min={1}
-              max={80}
+              min={BODY_SCALE_MIN}
+              max={BODY_SCALE_MAX}
               step={1}
               format={(value) => `${value}×`}
               onChange={(bodyScale) => onScaleChange({ bodyScale })}
@@ -425,24 +454,50 @@ export function Controls({
         >
           <p className="hud-kicker">Objects</p>
             <nav className="body-list" aria-label="System bodies">
-              {FOCUS_ITEMS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={focus === item.id ? "is-active" : undefined}
-                  onClick={() => {
-                    onFocus(item.id);
-                    if (narrow)
-                      setOpenPanels((current) => ({
-                        ...current,
-                        objects: false,
-                      }));
-                  }}
-                >
-                  <BodySwatch id={item.id} />
-                  {item.label}
-                </button>
-              ))}
+              {PRIMARY_BODIES.map((item) => {
+                const moons = isPlanetId(item.id) ? MOONS_BY_PARENT[item.id] : [];
+                return (
+                  <div key={item.id} className="body-group">
+                    <button
+                      type="button"
+                      className={focus === item.id ? "is-active" : undefined}
+                      onClick={() => {
+                        onFocus(item.id);
+                        if (narrow)
+                          setOpenPanels((current) => ({
+                            ...current,
+                            objects: false,
+                          }));
+                      }}
+                    >
+                      <BodySwatch id={item.id} />
+                      {item.label}
+                    </button>
+                    {moons.length > 0 ? (
+                      <div className="body-moons">
+                        {moons.map((moon) => (
+                          <button
+                            key={moon.id}
+                            type="button"
+                            className={`body-moon ${focus === moon.id ? "is-active" : ""}`.trim()}
+                            onClick={() => {
+                              onFocus(moon.id);
+                              if (narrow)
+                                setOpenPanels((current) => ({
+                                  ...current,
+                                  objects: false,
+                                }));
+                            }}
+                          >
+                            <BodySwatch id={moon.id} />
+                            {moon.label}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
               <button
                 type="button"
                 className={`body-list-overview ${focus === "reset" ? "is-active" : ""}`.trim()}
@@ -456,6 +511,21 @@ export function Controls({
                 }}
               >
                 Solar system overview
+              </button>
+              <button
+                type="button"
+                className={`body-list-locate ${geoStatus === "ready" ? "is-active" : ""}`.trim()}
+                disabled={geoStatus === "pending"}
+                onClick={onWhereAmI}
+              >
+                <span className="body-swatch body-swatch-locate" aria-hidden />
+                {geoStatus === "pending"
+                  ? "Locating…"
+                  : geoStatus === "denied"
+                    ? "Location denied"
+                    : geoStatus === "unavailable"
+                      ? "Location unavailable"
+                      : "Where am I?"}
               </button>
             </nav>
         </aside>

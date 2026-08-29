@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useFrame, useThree } from '@react-three/fiber'
 import { Vector3 } from 'three'
-import type { BodyId } from '../astronomy/bodies.ts'
+import { isMoonId, MOON_BY_ID, type BodyId } from '../astronomy/bodies.ts'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
 import { length } from '../astronomy/positions.ts'
 import type { BodyRadii } from '../astronomy/scale.ts'
@@ -87,11 +87,11 @@ export function writeFocusPose(
     return
   }
 
-  if (focus === 'moon') {
-    const earth = positions.earth
-    let ax = pos[0] - earth[0]
-    let ay = pos[1] - earth[1]
-    let az = pos[2] - earth[2]
+  if (isMoonId(focus)) {
+    const parent = positions[MOON_BY_ID[focus].parent]
+    let ax = pos[0] - parent[0]
+    let ay = pos[1] - parent[1]
+    let az = pos[2] - parent[2]
     const len = Math.hypot(ax, ay, az) || 1
     cameraOut.set(
       pos[0] + (ax / len) * radius * 12,

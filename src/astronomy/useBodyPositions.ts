@@ -7,15 +7,16 @@ import {
   type EphemerisStore,
 } from './ephemerisStore.ts'
 
-export function useBodyPositions(auInUnits: number) {
+export function useBodyPositions(auInUnits: number, bodyScale: number) {
   const storeRef = useRef<EphemerisStore | null>(null)
   if (!storeRef.current) {
-    storeRef.current = createEphemerisStore(auInUnits)
+    storeRef.current = createEphemerisStore({ auInUnits, bodyScale })
   }
   const store = storeRef.current
 
-  if (store.auInUnits !== auInUnits) {
+  if (store.auInUnits !== auInUnits || store.bodyScale !== bodyScale) {
     store.auInUnits = auInUnits
+    store.bodyScale = bodyScale
     recomputeEphemeris(store)
   }
 

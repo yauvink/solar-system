@@ -5,8 +5,25 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>Solar System</title>
+    <link rel="stylesheet" href="/src/index.css" />
   </head>
   <body>
+    <div id="space-loader" class="space-loader" role="status" aria-live="polite" aria-label="Loading the solar system">
+      <div class="space-loader-inner">
+        <div class="space-loader-stars" aria-hidden="true"></div>
+        <div class="space-loader-stage" aria-hidden="true">
+          <div class="space-loader-halo"></div>
+          <div class="space-loader-planet"></div>
+          <svg class="space-loader-ring" viewBox="0 0 168 58" aria-hidden="true">
+            <ellipse cx="84" cy="29" rx="80" ry="24" />
+          </svg>
+          <div class="space-loader-moon-path">
+            <div class="space-loader-moon"></div>
+          </div>
+        </div>
+        <p class="space-loader-copy">Charting the solar system</p>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

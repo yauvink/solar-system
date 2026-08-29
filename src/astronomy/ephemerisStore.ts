@@ -1,6 +1,16 @@
 import type { BodyId } from './bodies.ts'
-import { createAxesMap, createGalacticFrame, writeAllBodyAxes, writeGalacticFrame, type BodyAxis, type GalacticFrame } from './axes.ts'
+import {
+  createAxesMap,
+  createGalacticFrame,
+  planetNorthMap,
+  writeGalacticFrame,
+  writeMoonAxes,
+  writePlanetAxes,
+  type BodyAxis,
+  type GalacticFrame,
+} from './axes.ts'
 import { createBodyPositions, writeBodyPositions, type BodyPositions } from './positions.ts'
+import { getBodyRadii, planetRadiiMap, type ScaleSettings } from './scale.ts'
 
 export const SCRUB_FINE_DAYS_PER_SEC = 0.5
 export const SCRUB_SLOW_DAYS_PER_SEC = 7
@@ -14,19 +24,21 @@ export type EphemerisStore = {
   speedDaysPerSec: number
   live: boolean
   auInUnits: number
+  bodyScale: number
   positions: BodyPositions
   axes: Record<BodyId, BodyAxis>
   galactic: GalacticFrame
   revision: number
 }
 
-export function createEphemerisStore(auInUnits: number): EphemerisStore {
+export function createEphemerisStore(scale: ScaleSettings): EphemerisStore {
   const dateMs = Date.now()
   const store: EphemerisStore = {
     dateMs,
     speedDaysPerSec: 0,
     live: true,
-    auInUnits,
+    auInUnits: scale.auInUnits,
+    bodyScale: scale.bodyScale,
     positions: createBodyPositions(),
     axes: createAxesMap(),
     galactic: createGalacticFrame(),
@@ -38,8 +50,16 @@ export function createEphemerisStore(auInUnits: number): EphemerisStore {
 
 export function recomputeEphemeris(store: EphemerisStore): void {
   const date = new Date(store.dateMs)
-  writeBodyPositions(store.positions, date, store.auInUnits)
-  writeAllBodyAxes(store.axes, date)
+  writePlanetAxes(store.axes, date)
+  const radii = getBodyRadii({ auInUnits: store.auInUnits, bodyScale: store.bodyScale })
+  writeBodyPositions(
+    store.positions,
+    date,
+    store.auInUnits,
+    planetRadiiMap(radii),
+    planetNorthMap(store.axes),
+  )
+  writeMoonAxes(store.axes, date)
   writeGalacticFrame(store.galactic)
   store.revision += 1
 }

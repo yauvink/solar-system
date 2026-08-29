@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import type { CSSProperties, ReactNode } from 'react'
@@ -34,20 +34,35 @@ type BodyLabelProps = {
   getPosition: () => Vec3
   radius: number
   children: string
+  /** Hide the name when the camera is farther than this distance. */
+  showWithin?: number
 }
 
-export function BodyLabel({ getPosition, radius, children }: BodyLabelProps) {
+export function BodyLabel({ getPosition, radius, children, showWithin }: BodyLabelProps) {
   const groupRef = useRef<Group>(null)
+  const nearRef = useRef(showWithin == null)
+  const [near, setNear] = useState(showWithin == null)
 
-  useFrame(() => {
+  useFrame(({ camera }) => {
     const position = getPosition()
-    if (!groupRef.current) return
-    groupRef.current.position.set(position[0], position[1] + radius * 1.28, position[2])
+    if (groupRef.current) {
+      groupRef.current.position.set(position[0], position[1] + radius * 1.28, position[2])
+    }
+    if (showWithin == null) return
+    const dx = camera.position.x - position[0]
+    const dy = camera.position.y - position[1]
+    const dz = camera.position.z - position[2]
+    const distance = Math.hypot(dx, dy, dz)
+    const next = nearRef.current ? distance < showWithin * 1.25 : distance < showWithin
+    if (next !== nearRef.current) {
+      nearRef.current = next
+      setNear(next)
+    }
   })
 
   return (
     <group ref={groupRef}>
-      <ScreenBillboardText>{children}</ScreenBillboardText>
+      {near ? <ScreenBillboardText>{children}</ScreenBillboardText> : null}
     </group>
   )
 }

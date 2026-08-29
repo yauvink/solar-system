@@ -1,5 +1,5 @@
 import { CanvasTexture, SRGBColorSpace } from 'three'
-import type { PlanetId } from '../astronomy/bodies.ts'
+import { MOON_BY_ID, type MoonId, type PlanetId } from '../astronomy/bodies.ts'
 
 function hash(x: number, y: number): number {
   const n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453
@@ -99,11 +99,20 @@ export function createEarthTexture(): CanvasTexture {
 }
 
 export function createMoonTexture(): CanvasTexture {
+  return createSatelliteTexture('moon')
+}
+
+export function createSatelliteTexture(id: MoonId): CanvasTexture {
+  const [cr, cg, cb] = MOON_BY_ID[id].color
   return paintTexture(512, (u, v) => {
     const n = fbm(u * 10, v * 5, 5)
     const crater = n > 0.72 ? 0.18 : 0
-    const gray = 90 + n * 110 - crater * 70
-    return [gray, gray, Math.round(gray * 0.96)]
+    const shade = 0.55 + n * 0.55 - crater * 0.28
+    return [
+      Math.round(cr * shade),
+      Math.round(cg * shade),
+      Math.round(cb * shade),
+    ]
   })
 }
 
