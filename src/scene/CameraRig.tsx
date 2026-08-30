@@ -94,10 +94,11 @@ export function writeFocusPose(
     let ay = pos[1] - parent[1]
     let az = pos[2] - parent[2]
     const len = Math.hypot(ax, ay, az) || 1
+    const stand = focus === 'yulia' ? radius * 6.5 : radius * 12
     cameraOut.set(
-      pos[0] + (ax / len) * radius * 12,
+      pos[0] + (ax / len) * stand,
       pos[1] + radius * 6 + (ay / len) * radius * 2,
-      pos[2] + (az / len) * radius * 12,
+      pos[2] + (az / len) * stand,
     )
     biasFocusCamera(cameraOut, targetOut)
     return

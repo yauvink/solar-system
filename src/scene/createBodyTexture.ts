@@ -102,7 +102,74 @@ export function createMoonTexture(): CanvasTexture {
   return createSatelliteTexture('moon')
 }
 
+function flowerAt(
+  u: number,
+  v: number,
+  cx: number,
+  cy: number,
+  scale: number,
+  petals: number,
+): { t: number; center: number } {
+  const dx = (u - cx) / scale
+  const dy = ((v - cy) * 1.7) / scale
+  const r = Math.hypot(dx, dy)
+  const a = Math.atan2(dy, dx)
+  const petal = 0.42 + 0.58 * Math.pow(0.5 + 0.5 * Math.cos(a * petals), 1.35)
+  const edge = petal
+  const t = r < edge ? 1 - r / edge : 0
+  const center = r < edge * 0.22 ? 1 - r / (edge * 0.22) : 0
+  return { t: t * t, center: center * center }
+}
+
+export function createYuliaTexture(): CanvasTexture {
+  const blooms: Array<{ x: number; y: number; s: number; petals: number; hue: number }> = []
+  for (let i = 0; i < 48; i++) {
+    blooms.push({
+      x: hash(i * 1.7, 4.2),
+      y: hash(i * 2.3, 9.1),
+      s: 0.038 + hash(i, 11.4) * 0.07,
+      petals: hash(i, 3.3) > 0.55 ? 6 : 5,
+      hue: hash(i, 7.7),
+    })
+  }
+
+  return paintTexture(1024, (u, v) => {
+    const n = fbm(u * 6, v * 4, 5)
+    const dusk = 0.5 + 0.5 * Math.sin(v * Math.PI * 3.2 + n * 2)
+    let r = lerp(232, 255, dusk) * (0.88 + n * 0.14)
+    let g = lerp(118, 188, dusk) * (0.82 + n * 0.16)
+    let b = lerp(168, 214, 1 - dusk) * (0.86 + n * 0.12)
+
+    const leaf = fbm(u * 14, v * 10, 3)
+    if (leaf > 0.62) {
+      r = lerp(r, 120, 0.22)
+      g = lerp(g, 168, 0.28)
+      b = lerp(b, 130, 0.18)
+    }
+
+    for (const bloom of blooms) {
+      const { t, center } = flowerAt(u, v, bloom.x, bloom.y, bloom.s, bloom.petals)
+      if (t <= 0) continue
+      const rose = bloom.hue < 0.45
+      const pr = rose ? 255 : 236
+      const pg = rose ? 118 + bloom.hue * 40 : 168
+      const pb = rose ? 168 : 214
+      r = lerp(r, pr, t * 0.92)
+      g = lerp(g, pg, t * 0.88)
+      b = lerp(b, pb, t * 0.9)
+      if (center > 0) {
+        r = lerp(r, 255, center * 0.85)
+        g = lerp(g, 220, center * 0.7)
+        b = lerp(b, 140, center * 0.45)
+      }
+    }
+
+    return [Math.round(r), Math.round(g), Math.round(b)]
+  })
+}
+
 export function createSatelliteTexture(id: MoonId): CanvasTexture {
+  if (id === 'yulia') return createYuliaTexture()
   const [cr, cg, cb] = MOON_BY_ID[id].color
   return paintTexture(512, (u, v) => {
     const n = fbm(u * 10, v * 5, 5)

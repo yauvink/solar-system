@@ -12,6 +12,7 @@ export type PlanetId =
 
 export type MoonId =
   | 'moon'
+  | 'yulia'
   | 'phobos'
   | 'deimos'
   | 'io'
@@ -58,6 +59,7 @@ export const RADIUS_KM: Record<BodyId, number> = {
   venus: 6_052,
   earth: 6_371,
   moon: 1_737,
+  yulia: 2_180,
   mars: 3_390,
   phobos: 11.3,
   deimos: 6.2,
@@ -109,6 +111,18 @@ export const PRIMARY_BODIES: readonly SystemBodyDef[] = [
 
 /** Major moons, inner → outer per planet. */
 export const MOON_DEFS: readonly MoonDef[] = [
+  {
+    id: 'yulia',
+    label: 'Юля',
+    parent: 'venus',
+    radiusKm: RADIUS_KM.yulia,
+    aKm: 268_000,
+    periodDays: 8.8,
+    inclDeg: 11.4,
+    orbitColor: '#f0b4d0',
+    color: [236, 150, 186],
+    swatch: '#f4b0cc',
+  },
   {
     id: 'moon',
     label: 'Moon',
@@ -374,7 +388,7 @@ export const MOON_BY_ID: Record<MoonId, MoonDef> = Object.fromEntries(
 
 export const MOONS_BY_PARENT: Record<PlanetId, MoonDef[]> = {
   mercury: [],
-  venus: [],
+  venus: MOON_DEFS.filter((moon) => moon.parent === 'venus'),
   earth: MOON_DEFS.filter((moon) => moon.parent === 'earth'),
   mars: MOON_DEFS.filter((moon) => moon.parent === 'mars'),
   jupiter: MOON_DEFS.filter((moon) => moon.parent === 'jupiter'),

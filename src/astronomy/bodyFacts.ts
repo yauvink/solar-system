@@ -67,6 +67,16 @@ export const BODY_FACTS: Record<FocusId, BodyFacts> = {
       { label: 'Atmosphere', value: '78% N₂, 21% O₂' },
     ],
   },
+  yulia: {
+    title: 'Юля',
+    kind: 'A world of my own',
+    rows: [
+      { label: 'Named for', value: 'Моя сестра Юля — лучшая сестра' },
+      { label: 'Heart', value: 'Нежная, светлая, любимая' },
+      { label: 'Orbit', value: 'Around Venus, always nearby' },
+      { label: 'Sky', value: 'Rose gardens under a lilac dusk' },
+    ],
+  },
   moon: {
     title: 'Moon',
     kind: 'Satellite of Earth',

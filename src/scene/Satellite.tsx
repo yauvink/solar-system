@@ -63,7 +63,8 @@ export function Satellite({ id, store, radius }: SatelliteProps) {
     }
   }, [id])
   const texture = nasaMoon?.color ?? fallback
-  const segments = id === 'moon' ? 128 : radius < 0.04 ? 16 : 32
+  const isYulia = id === 'yulia'
+  const segments = id === 'moon' ? 128 : isYulia ? 64 : radius < 0.04 ? 16 : 32
 
   useLayoutEffect(() => {
     return () => {
@@ -98,13 +99,19 @@ export function Satellite({ id, store, radius }: SatelliteProps) {
             displacementMap={nasaMoon?.height}
             displacementScale={nasaMoon ? 0.032 : 0}
             displacementBias={nasaMoon ? -0.013 : 0}
-            roughness={id === 'moon' ? 0.94 : 1}
-            metalness={0}
-            emissiveMap={nasaMoon?.color}
-            emissive={nasaMoon ? '#ffffff' : '#000000'}
-            emissiveIntensity={nasaMoon ? 0.2 : 0}
+            roughness={id === 'moon' ? 0.94 : isYulia ? 0.48 : 1}
+            metalness={isYulia ? 0.08 : 0}
+            emissiveMap={nasaMoon?.color ?? (isYulia ? texture : undefined)}
+            emissive={nasaMoon ? '#ffffff' : isYulia ? '#ffd0e4' : '#000000'}
+            emissiveIntensity={nasaMoon ? 0.2 : isYulia ? 0.28 : 0}
           />
         </mesh>
+        {isYulia ? (
+          <mesh>
+            <sphereGeometry args={[1.08, 32, 32]} />
+            <meshBasicMaterial color="#f4b4d0" transparent opacity={0.2} />
+          </mesh>
+        ) : null}
       </group>
       <BodyLabel
         getPosition={() => store.positions[id]}
