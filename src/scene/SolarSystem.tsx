@@ -100,6 +100,7 @@ export const SolarSystem = memo(function SolarSystem({
         auInUnits={auInUnits}
         crossing={perseidCrossing}
         labelRadius={radii.earth}
+        showOrbit={showAxes}
       />
 
       <Sun store={store} radius={radii.sun} />

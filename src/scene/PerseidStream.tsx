@@ -31,6 +31,7 @@ type PerseidStreamProps = {
   auInUnits: number
   crossing: boolean
   labelRadius: number
+  showOrbit: boolean
 }
 
 const TAIL_LENGTH = 20
@@ -95,7 +96,7 @@ function createSoftSprite(): CanvasTexture {
   return texture
 }
 
-export function PerseidStream({ store, auInUnits, crossing, labelRadius }: PerseidStreamProps) {
+export function PerseidStream({ store, auInUnits, crossing, labelRadius, showOrbit }: PerseidStreamProps) {
   const cometRef = useRef<Group>(null)
   const tailRef = useRef<Group>(null)
   const dustPlaneRef = useRef<Mesh>(null)
@@ -176,7 +177,7 @@ export function PerseidStream({ store, auInUnits, crossing, labelRadius }: Perse
 
   return (
     <>
-      <OrbitRing points={orbitPath} color="#fff1dc" opacity={0.2} />
+      {showOrbit ? <OrbitRing points={orbitPath} color="#fff1dc" opacity={0.2} /> : null}
       <primitive object={points} />
       <group ref={cometRef}>
         <mesh>
