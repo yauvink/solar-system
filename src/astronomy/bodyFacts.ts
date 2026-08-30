@@ -1,3 +1,4 @@
+import { RADIUS_KM, type BodyId } from './bodies.ts'
 import type { FocusId } from '../scene/CameraRig.tsx'
 
 export type FactRow = {
@@ -23,6 +24,7 @@ export const BODY_FACTS: Record<FocusId, BodyFacts> = {
     rows: [
       { label: 'Age', value: '4.6 billion years' },
       { label: 'Planets', value: '8 (IAU, 2006)' },
+      { label: 'To Neptune', value: '30 AU · 4.5 billion km' },
       { label: '1 AU', value: '149,597,871 km' },
       { label: 'Mass share', value: 'Sun holds 99.8%' },
     ],
@@ -103,7 +105,6 @@ export const BODY_FACTS: Record<FocusId, BodyFacts> = {
     rows: [
       { label: 'Rotation', value: '7.66 hours, synchronous' },
       { label: 'Orbit period', value: '7.66 hours' },
-      { label: 'Mean radius', value: '11.3 km' },
       { label: 'Composition', value: 'Dark carbonaceous rubble' },
     ],
   },
@@ -113,7 +114,6 @@ export const BODY_FACTS: Record<FocusId, BodyFacts> = {
     rows: [
       { label: 'Rotation', value: '30.3 hours, synchronous' },
       { label: 'Orbit period', value: '1.26 Earth days' },
-      { label: 'Mean radius', value: '6.2 km' },
       { label: 'Composition', value: 'Dark carbonaceous rubble' },
     ],
   },
@@ -329,6 +329,16 @@ export const BODY_FACTS: Record<FocusId, BodyFacts> = {
   },
 }
 
+function formatRadiusKm(km: number): string {
+  if (km >= 100) return `${Math.round(km).toLocaleString('en-US')} km`
+  return `${km.toFixed(1)} km`
+}
+
 export function getBodyFacts(focus: FocusId): BodyFacts {
-  return BODY_FACTS[focus]
+  const facts = BODY_FACTS[focus]
+  if (focus === 'reset') return facts
+  const km = RADIUS_KM[focus as BodyId]
+  const size: FactRow = { label: 'Radius', value: formatRadiusKm(km) }
+  const rows = facts.rows.filter((row) => row.label !== 'Radius' && row.label !== 'Mean radius')
+  return { ...facts, rows: [size, ...rows] }
 }
