@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { createContext, useContext, useRef, useState } from 'react'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import type { CSSProperties, ReactNode } from 'react'
@@ -38,7 +38,10 @@ type BodyLabelProps = {
   showWithin?: number
 }
 
+export const ShowBodyNamesContext = createContext(true)
+
 export function BodyLabel({ getPosition, radius, children, showWithin }: BodyLabelProps) {
+  const showNames = useContext(ShowBodyNamesContext)
   const groupRef = useRef<Group>(null)
   const nearRef = useRef(showWithin == null)
   const [near, setNear] = useState(showWithin == null)
@@ -62,7 +65,7 @@ export function BodyLabel({ getPosition, radius, children, showWithin }: BodyLab
 
   return (
     <group ref={groupRef}>
-      {near ? <ScreenBillboardText>{children}</ScreenBillboardText> : null}
+      {showNames && near ? <ScreenBillboardText>{children}</ScreenBillboardText> : null}
     </group>
   )
 }

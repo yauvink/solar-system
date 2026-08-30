@@ -42,6 +42,8 @@ type ControlsProps = {
   positions: BodyPositions;
   showAxes: boolean;
   onShowAxesChange: (value: boolean) => void;
+  showNames: boolean;
+  onShowNamesChange: (value: boolean) => void;
   geoStatus: GeoStatus;
   onWhereAmI: () => void;
 };
@@ -87,11 +89,13 @@ function BodySwatch({ id }: { id: FocusId }) {
   return <span className={`body-swatch body-swatch-${id as BodyId}`} aria-hidden />;
 }
 
-function Chevron({ dir }: { dir: "left" | "right" }) {
+function Chevron({ dir }: { dir: "left" | "right" | "down" }) {
+  const path =
+    dir === "left" ? "M10 3 5 8l5 5" : dir === "right" ? "M6 3l5 5-5 5" : "M3 6l5 5 5-5";
   return (
     <svg className="hud-dock-icon" viewBox="0 0 16 16" aria-hidden>
       <path
-        d={dir === "left" ? "M10 3 5 8l5 5" : "M6 3l5 5-5 5"}
+        d={path}
         fill="none"
         stroke="currentColor"
         strokeWidth="1.6"
@@ -182,6 +186,8 @@ export function Controls({
   positions,
   showAxes,
   onShowAxesChange,
+  showNames,
+  onShowNamesChange,
   geoStatus,
   onWhereAmI,
 }: ControlsProps) {
@@ -190,6 +196,11 @@ export function Controls({
   const timeValue = toTimeInputValue(date);
   const narrow = useNarrowViewport();
   const [openPanels, setOpenPanels] = useState<OpenPanels>(defaultOpenPanels);
+  const [openMoonParent, setOpenMoonParent] = useState<BodyId | null>(null);
+
+  useEffect(() => {
+    if (isMoonId(focus)) setOpenMoonParent(MOON_BY_ID[focus].parent);
+  }, [focus]);
 
   useEffect(() => {
     if (!narrow || geoStatus !== "ready") return;
@@ -291,6 +302,14 @@ export function Controls({
                 onChange={(event) => onShowAxesChange(event.target.checked)}
               />
               Show orbits and axes
+            </label>
+            <label className="hud-check">
+              <input
+                type="checkbox"
+                checked={showNames}
+                onChange={(event) => onShowNamesChange(event.target.checked)}
+              />
+              Show object names
             </label>
             <Slider
               label="Body sizes"
@@ -501,24 +520,46 @@ export function Controls({
               </button>
               {PRIMARY_BODIES.map((item) => {
                 const moons = isPlanetId(item.id) ? MOONS_BY_PARENT[item.id] : [];
+                const moonsOpen = openMoonParent === item.id;
                 return (
                   <div key={item.id} className="body-group">
-                    <button
-                      type="button"
-                      className={focus === item.id ? "is-active" : undefined}
-                      onClick={() => {
-                        onFocus(item.id);
-                        if (narrow)
-                          setOpenPanels((current) => ({
-                            ...current,
-                            objects: false,
-                          }));
-                      }}
-                    >
-                      <BodySwatch id={item.id} />
-                      {item.label}
-                    </button>
-                    {moons.length > 0 ? (
+                    <div className="body-group-head">
+                      <button
+                        type="button"
+                        className={focus === item.id ? "is-active" : undefined}
+                        onClick={() => {
+                          onFocus(item.id);
+                          if (narrow)
+                            setOpenPanels((current) => ({
+                              ...current,
+                              objects: false,
+                            }));
+                        }}
+                      >
+                        <BodySwatch id={item.id} />
+                        {item.label}
+                      </button>
+                      {moons.length > 0 ? (
+                        <button
+                          type="button"
+                          className="body-moons-toggle"
+                          aria-expanded={moonsOpen}
+                          aria-label={
+                            moonsOpen
+                              ? `Hide ${item.label} moons`
+                              : `Show ${item.label} moons`
+                          }
+                          onClick={() =>
+                            setOpenMoonParent((current) =>
+                              current === item.id ? null : item.id,
+                            )
+                          }
+                        >
+                          <Chevron dir={moonsOpen ? "down" : "right"} />
+                        </button>
+                      ) : null}
+                    </div>
+                    {moons.length > 0 && moonsOpen ? (
                       <div className="body-moons">
                         {moons.map((moon) => (
                           <button

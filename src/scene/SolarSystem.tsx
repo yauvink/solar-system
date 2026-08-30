@@ -1,7 +1,6 @@
 import { memo, useMemo } from "react";
 import { OrbitControls } from "@react-three/drei";
 import {
-  BODY_BY_ID,
   MOON_BY_ID,
   MOON_IDS,
   PLANET_IDS,
@@ -14,6 +13,7 @@ import {
 } from "../astronomy/orbits.ts";
 import { planetNorthMap } from "../astronomy/axes.ts";
 import { planetRadiiMap, type BodyRadii } from "../astronomy/scale.ts";
+import { ShowBodyNamesContext } from "./BodyLabel.tsx";
 import { CameraFar } from "./CameraFar.tsx";
 import { CameraRig, type FocusId } from "./CameraRig.tsx";
 import { EphemerisLoop } from "./EphemerisLoop.tsx";
@@ -30,11 +30,13 @@ type SolarSystemProps = {
   store: EphemerisStore;
   radii: BodyRadii;
   focus: FocusId;
+  focusFrom: FocusId;
   focusNonce: number;
   skyRadius: number;
   cameraFar: number;
   maxDistance: number;
   showAxes: boolean;
+  showNames: boolean;
   showDegrees: boolean;
   skyBrightness: number;
   milkyWayBrightness: number;
@@ -48,11 +50,13 @@ export const SolarSystem = memo(function SolarSystem({
   store,
   radii,
   focus,
+  focusFrom,
   focusNonce,
   skyRadius,
   cameraFar,
   maxDistance,
   showAxes,
+  showNames,
   showDegrees,
   skyBrightness,
   milkyWayBrightness,
@@ -77,7 +81,7 @@ export const SolarSystem = memo(function SolarSystem({
   );
 
   return (
-    <>
+    <ShowBodyNamesContext.Provider value={showNames}>
       <color attach="background" args={["#02040a"]} />
       <ambientLight intensity={0.28} color="#c5d4ff" />
       <hemisphereLight args={["#fff4d6", "#1a2233", 0.35]} />
@@ -112,8 +116,8 @@ export const SolarSystem = memo(function SolarSystem({
             <OrbitRing
               key={`${id}-orbit`}
               points={planetOrbits[id]}
-              color={BODY_BY_ID[id].orbitColor}
-              opacity={id === "neptune" || id === "uranus" ? 0.22 : 0.36}
+              color="#ffffff"
+              opacity={0.48}
             />
           ))}
           {MOON_IDS.map((id) => (
@@ -121,7 +125,7 @@ export const SolarSystem = memo(function SolarSystem({
               key={`${id}-orbit`}
               points={moonOrbits[id]}
               getOffset={() => store.positions[MOON_BY_ID[id].parent]}
-              color={MOON_BY_ID[id].orbitColor}
+              color="#ffffff"
               opacity={0.48}
             />
           ))}
@@ -153,10 +157,11 @@ export const SolarSystem = memo(function SolarSystem({
       />
       <CameraRig
         focus={focus}
+        focusFrom={focusFrom}
         focusNonce={focusNonce}
         store={store}
         radii={radii}
       />
-    </>
+    </ShowBodyNamesContext.Provider>
   );
 });

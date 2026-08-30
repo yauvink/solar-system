@@ -451,6 +451,44 @@ body,
   gap: 3px;
 }
 
+.body-group-head {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.body-group-head > button:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.body-moons-toggle {
+  appearance: none;
+  flex: 0 0 36px;
+  width: 36px;
+  min-height: 42px;
+  padding: 0;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.body-moons-toggle:hover,
+.body-moons-toggle[aria-expanded="true"] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.body-moons-toggle .hud-dock-icon {
+  width: 14px;
+  height: 14px;
+}
+
 .body-moons {
   display: flex;
   flex-direction: column;
