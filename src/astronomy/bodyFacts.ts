@@ -327,6 +327,28 @@ export const BODY_FACTS: Record<FocusId, BodyFacts> = {
       { label: 'Surface', value: 'Nitrogen ice; geysers' },
     ],
   },
+  swiftTuttle: {
+    title: '109P/Swift–Tuttle',
+    kind: 'Parent of the Perseids',
+    rows: [
+      { label: 'Period', value: '133.28 years' },
+      { label: 'Perihelion', value: '0.96 AU · 12 Dec 1992' },
+      { label: 'Next return', value: '12 Jul 2126' },
+      { label: 'Inclination', value: '113.45°, retrograde' },
+      { label: 'Aphelion', value: '~51 AU' },
+    ],
+  },
+  perseids: {
+    title: 'Perseids',
+    kind: 'Meteor stream · IAU MDC #7 PER',
+    rows: [
+      { label: 'Parent', value: '109P/Swift–Tuttle only' },
+      { label: 'Peak', value: 'λ⊙ = 140° · ~12 August' },
+      { label: 'Entry speed', value: 'Vg ≈ 59 km/s' },
+      { label: 'Radiant', value: 'RA 47°, Dec +58° (Perseus)' },
+      { label: 'Tube', value: 'Dust on a retrograde orbit' },
+    ],
+  },
 }
 
 function formatRadiusKm(km: number): string {
@@ -336,7 +358,7 @@ function formatRadiusKm(km: number): string {
 
 export function getBodyFacts(focus: FocusId): BodyFacts {
   const facts = BODY_FACTS[focus]
-  if (focus === 'reset') return facts
+  if (focus === 'reset' || !(focus in RADIUS_KM)) return facts
   const km = RADIUS_KM[focus as BodyId]
   const size: FactRow = { label: 'Radius', value: formatRadiusKm(km) }
   const rows = facts.rows.filter((row) => row.label !== 'Radius' && row.label !== 'Mean radius')

@@ -22,7 +22,7 @@ import {
   type BodyRadii,
   type ScaleSettings,
 } from "../astronomy/scale.ts";
-import type { FocusId } from "../scene/CameraRig.tsx";
+import { isStreamId, type FocusId } from "../scene/CameraRig.tsx";
 import { ObjectFacts } from "./ObjectFacts.tsx";
 
 export type GeoStatus = "idle" | "pending" | "ready" | "denied" | "unavailable";
@@ -77,6 +77,9 @@ function useNarrowViewport(): boolean {
 
 function BodySwatch({ id }: { id: FocusId }) {
   if (id === "reset") return <span className="body-swatch body-swatch-reset" aria-hidden />;
+  if (isStreamId(id)) {
+    return <span className={`body-swatch body-swatch-${id}`} aria-hidden />;
+  }
   if (isMoonId(id)) {
     return (
       <span
@@ -282,11 +285,11 @@ export function Controls({
           <aside
             id="hud-scale-panel"
             className="hud-panel hud-scale-panel"
-            aria-label="Scene"
+            aria-label="Scene settings"
             inert={!openPanels.scale}
           >
             <div className="hud-panel-head">
-              <p className="hud-kicker">Scene</p>
+              <p className="hud-kicker">Scene settings</p>
               <button
                 type="button"
                 className="scale-reset"
@@ -366,7 +369,7 @@ export function Controls({
             onClick={() => togglePanel("scale")}
           >
             <Chevron dir={openPanels.scale ? "left" : "right"} />
-            <span className="hud-dock-tab-name">Scene</span>
+            <span className="hud-dock-tab-name">Scene settings</span>
           </button>
         </div>
 
@@ -479,7 +482,7 @@ export function Controls({
           onClick={() => togglePanel("objects")}
         >
           <Chevron dir={openPanels.objects ? "right" : "left"} />
-          <span className="hud-dock-tab-name">Objects</span>
+          <span className="hud-dock-tab-name">Objects navigation</span>
         </button>
         <aside
           id="hud-objects-panel"
@@ -487,22 +490,8 @@ export function Controls({
           aria-label="System bodies"
           inert={!openPanels.objects}
         >
-          <p className="hud-kicker">Objects</p>
+          <p className="hud-kicker">Objects navigation</p>
             <nav className="body-list" aria-label="System bodies">
-              <button
-                type="button"
-                className={`body-list-overview ${focus === "reset" ? "is-active" : ""}`.trim()}
-                onClick={() => {
-                  onFocus("reset");
-                  if (narrow)
-                    setOpenPanels((current) => ({
-                      ...current,
-                      objects: false,
-                    }));
-                }}
-              >
-                Solar system overview
-              </button>
               <button
                 type="button"
                 className={`body-list-locate ${geoStatus === "ready" ? "is-active" : ""}`.trim()}
@@ -517,6 +506,20 @@ export function Controls({
                     : geoStatus === "unavailable"
                       ? "Location unavailable"
                       : "Where am I?"}
+              </button>
+              <button
+                type="button"
+                className={`body-list-overview ${focus === "reset" ? "is-active" : ""}`.trim()}
+                onClick={() => {
+                  onFocus("reset");
+                  if (narrow)
+                    setOpenPanels((current) => ({
+                      ...current,
+                      objects: false,
+                    }));
+                }}
+              >
+                Solar system overview
               </button>
               {PRIMARY_BODIES.map((item) => {
                 const moons = isPlanetId(item.id) ? MOONS_BY_PARENT[item.id] : [];
@@ -584,6 +587,30 @@ export function Controls({
                   </div>
                 );
               })}
+              <p className="body-list-section">Streams</p>
+              {(
+                [
+                  { id: "swiftTuttle" as const, label: "Swift–Tuttle" },
+                  { id: "perseids" as const, label: "Perseids" },
+                ]
+              ).map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  className={focus === item.id ? "is-active" : undefined}
+                  onClick={() => {
+                    onFocus(item.id);
+                    if (narrow)
+                      setOpenPanels((current) => ({
+                        ...current,
+                        objects: false,
+                      }));
+                  }}
+                >
+                  <BodySwatch id={item.id} />
+                  {item.label}
+                </button>
+              ))}
             </nav>
         </aside>
       </div>
@@ -596,6 +623,7 @@ export function Controls({
         >
           Imagery · NASA / USGS / ESA
         </a>
+        <span>Perseids · 109P/Swift–Tuttle · IAU MDC</span>
       </p>
     </div>
   );

@@ -19,7 +19,7 @@ type OrbitRingProps = {
 
 const vertCount = ORBIT_SEGMENTS + 1
 
-export function OrbitRing({ points, color = '#ffffff', opacity = 0.48, getOffset }: OrbitRingProps) {
+export function OrbitRing({ points, color = '#ffffff', opacity = 0.24, getOffset }: OrbitRingProps) {
   const geometry = useMemo(() => {
     const geo = new BufferGeometry()
     geo.setAttribute('position', new BufferAttribute(new Float32Array(vertCount * 3), 3))

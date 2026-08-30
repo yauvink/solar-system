@@ -312,11 +312,16 @@ body,
   right: max(6px, env(safe-area-inset-right));
   bottom: max(4px, env(safe-area-inset-bottom));
   z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   margin: 0;
   pointer-events: auto;
   font-size: 8px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  text-align: right;
   color: var(--muted);
 }
 
@@ -601,6 +606,7 @@ body,
 
 .body-list button.body-list-overview {
   margin-top: 0;
+  margin-bottom: 8px;
   justify-content: flex-start;
   text-align: left;
   border-color: var(--accent);
@@ -615,8 +621,7 @@ body,
 }
 
 .body-list button.body-list-locate {
-  margin-top: 4px;
-  margin-bottom: 8px;
+  margin-top: 0;
   justify-content: flex-start;
   text-align: left;
   border-color: #d87a62;
@@ -637,6 +642,24 @@ body,
 
 .body-swatch-locate {
   background: radial-gradient(circle at 35% 28%, #ffd4b0, #ff5a4a 62%, #c43a32);
+}
+
+.body-list-section {
+  margin: 10px 0 2px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.body-swatch-swiftTuttle {
+  background: radial-gradient(circle at 35% 28%, #fff8e8, #d8e8ff 55%, #8aa8c8);
+  box-shadow: 0 0 6px #c8dcff88, inset 0 -2px 3px rgba(0, 0, 0, 0.25);
+}
+
+.body-swatch-perseids {
+  background: radial-gradient(circle at 35% 28%, #ffe8c8, #ffb070 55%, #c86838);
+  box-shadow: 0 0 6px #ffb07066, inset 0 -2px 3px rgba(0, 0, 0, 0.25);
 }
 
 .hud-check {

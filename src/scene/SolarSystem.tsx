@@ -96,6 +96,7 @@ export const SolarSystem = memo(function SolarSystem({
         milkyWayBrightness={milkyWayBrightness}
       />
       <PerseidStream
+        store={store}
         auInUnits={auInUnits}
         crossing={perseidCrossing}
         labelRadius={radii.earth}
@@ -117,7 +118,7 @@ export const SolarSystem = memo(function SolarSystem({
               key={`${id}-orbit`}
               points={planetOrbits[id]}
               color="#ffffff"
-              opacity={0.48}
+              opacity={0.24}
             />
           ))}
           {MOON_IDS.map((id) => (
@@ -126,7 +127,7 @@ export const SolarSystem = memo(function SolarSystem({
               points={moonOrbits[id]}
               getOffset={() => store.positions[MOON_BY_ID[id].parent]}
               color="#ffffff"
-              opacity={0.48}
+              opacity={0.24}
             />
           ))}
         </>

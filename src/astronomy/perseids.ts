@@ -1,4 +1,5 @@
 import { SunPosition } from 'astronomy-engine'
+import { ORBIT_SEGMENTS } from './orbits.ts'
 import { auToDistanceUnits } from './scale.ts'
 import type { Vec3 } from './positions.ts'
 
@@ -19,6 +20,26 @@ const SWIFT_TUTTLE = {
   i: (113.45 * Math.PI) / 180,
   node: (139.37 * Math.PI) / 180,
   peri: (153.0 * Math.PI) / 180,
+}
+
+const PERIOD_YEARS = 133.28
+const PERIOD_MS = PERIOD_YEARS * 365.25 * 86_400_000
+/** 12 December 1992 perihelion (JPL SBDB). */
+const PERIHELION_MS = Date.UTC(1992, 11, 12)
+/** One visual crawl of the drawn arc per this many years of ephemeris time. */
+const DUST_LAP_YEARS = 48
+const DUST_LAP_MS = DUST_LAP_YEARS * 365.25 * 86_400_000
+
+export const PERSEID_PATH_SAMPLES = 220
+export const PERSEID_DUST_COUNT = 3200
+const PATH_NU_MIN = -2.79
+const PATH_NU_MAX = 2.79
+
+export type PerseidDustKit = {
+  pathEcl: Float32Array
+  u: Float32Array
+  offsetEcl: Float32Array
+  crossingEcl: Vec3
 }
 
 function wrapLon(deg: number): number {
@@ -89,8 +110,33 @@ function eclipticFromTrueAnomaly(nu: number): [number, number, number] {
   return [x2 * cosO - y2 * sinO, x2 * sinO + y2 * cosO, z2]
 }
 
-function toSceneFromEcliptic(x: number, y: number, z: number, auInUnits: number): Vec3 {
+export function toSceneFromEcliptic(x: number, y: number, z: number, auInUnits: number): Vec3 {
   return [auToDistanceUnits(x, auInUnits), auToDistanceUnits(z, auInUnits), auToDistanceUnits(-y, auInUnits)]
+}
+
+function keplerE(M: number, e: number): number {
+  let E = M + e * Math.sin(M)
+  for (let i = 0; i < 16; i++) {
+    const dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E))
+    E -= dE
+    if (Math.abs(dE) < 1e-11) break
+  }
+  return E
+}
+
+function trueAnomalyFromDate(date: Date): number {
+  const turns = (date.getTime() - PERIHELION_MS) / PERIOD_MS
+  let M = (turns - Math.floor(turns)) * Math.PI * 2
+  if (M > Math.PI) M -= Math.PI * 2
+  const E = keplerE(M, SWIFT_TUTTLE.e)
+  const sinH = Math.sin(E / 2)
+  const cosH = Math.cos(E / 2)
+  return 2 * Math.atan2(Math.sqrt(1 + SWIFT_TUTTLE.e) * sinH, Math.sqrt(1 - SWIFT_TUTTLE.e) * cosH)
+}
+
+export function positionOfSwiftTuttle(date: Date, auInUnits: number): Vec3 {
+  const [x, y, z] = eclipticFromTrueAnomaly(trueAnomalyFromDate(date))
+  return toSceneFromEcliptic(x, y, z, auInUnits)
 }
 
 function hash(i: number): number {
@@ -98,75 +144,151 @@ function hash(i: number): number {
   return n - Math.floor(n)
 }
 
-export function createPerseidCloud(auInUnits: number): {
-  positions: Float32Array
-  crossingCenter: Vec3
-} {
-  const points: number[] = []
-  let crossingX = 0
-  let crossingY = 0
-  let crossingZ = 0
-  let crossingCount = 0
+function writePathEcliptic(out: Float32Array): void {
+  for (let i = 0; i < PERSEID_PATH_SAMPLES; i++) {
+    const nu = PATH_NU_MIN + ((PATH_NU_MAX - PATH_NU_MIN) * i) / (PERSEID_PATH_SAMPLES - 1)
+    const [x, y, z] = eclipticFromTrueAnomaly(nu)
+    const i3 = i * 3
+    out[i3] = x
+    out[i3 + 1] = y
+    out[i3 + 2] = z
+  }
+}
 
-  const samples = 1600
-  for (let i = 0; i < samples; i++) {
-    const nu = -2.55 + (5.1 * i) / (samples - 1)
-    const [ex, ey, ez] = eclipticFromTrueAnomaly(nu)
-    const r = Math.hypot(ex, ey, ez)
-    if (r < 0.55 || r > 12) continue
+function samplePathEcl(path: Float32Array, u: number, out: [number, number, number]): void {
+  const n = path.length / 3
+  const t = ((u % 1) + 1) % 1
+  const f = t * (n - 1)
+  const i = Math.min(n - 2, Math.floor(f))
+  const s = f - i
+  const a = i * 3
+  const b = a + 3
+  out[0] = path[a] + (path[b] - path[a]) * s
+  out[1] = path[a + 1] + (path[b + 1] - path[a + 1]) * s
+  out[2] = path[a + 2] + (path[b + 2] - path[a + 2]) * s
+}
 
-    const dense = Math.abs(nu) < 2.52
-    const spreadAu = dense ? 0.085 : 0.04
-    const count = dense ? 28 : 12
-    const center = toSceneFromEcliptic(ex, ey, ez, auInUnits)
-    if (r > 0.88 && r < 1.18) {
-      crossingX += center[0]
-      crossingY += center[1]
-      crossingZ += center[2]
-      crossingCount += 1
-    }
+function pathFrame(
+  path: Float32Array,
+  u: number,
+): { t: [number, number, number]; b: [number, number, number]; n: [number, number, number] } {
+  const ecl: [number, number, number] = [0, 0, 0]
+  const ahead: [number, number, number] = [0, 0, 0]
+  samplePathEcl(path, u, ecl)
+  samplePathEcl(path, u + 0.004, ahead)
+  let tx = ahead[0] - ecl[0]
+  let ty = ahead[1] - ecl[1]
+  let tz = ahead[2] - ecl[2]
+  const tLen = Math.hypot(tx, ty, tz) || 1
+  tx /= tLen
+  ty /= tLen
+  tz /= tLen
+  let bx = -ty
+  let by = tx
+  let bz = 0
+  let bLen = Math.hypot(bx, by, bz)
+  if (bLen < 1e-6) {
+    bx = 0
+    by = -tz
+    bz = ty
+    bLen = Math.hypot(bx, by, bz) || 1
+  }
+  bx /= bLen
+  by /= bLen
+  bz /= bLen
+  const nx = ty * bz - tz * by
+  const ny = tz * bx - tx * bz
+  const nz = tx * by - ty * bx
+  return { t: [tx, ty, tz], b: [bx, by, bz], n: [nx, ny, nz] }
+}
 
-    const tangent = eclipticFromTrueAnomaly(nu + 0.01)
-    const tx = tangent[0] - ex
-    const ty = tangent[1] - ey
-    const tz = tangent[2] - ez
-    const tLen = Math.hypot(tx, ty, tz) || 1
-    let bx = -ty / tLen
-    let by = tx / tLen
-    let bz = 0
-    let bLen = Math.hypot(bx, by, bz)
-    if (bLen < 1e-6) {
-      bx = 0
-      by = -tz / tLen
-      bz = ty / tLen
-      bLen = Math.hypot(bx, by, bz)
-    }
-    bx /= bLen
-    by /= bLen
-    bz /= bLen
-    const nx = (ty * bz - tz * by) / tLen
-    const ny = (tz * bx - tx * bz) / tLen
-    const nz = (tx * by - ty * bx) / tLen
+export function createPerseidOrbitPath(auInUnits: number): Float32Array {
+  const count = ORBIT_SEGMENTS + 1
+  const out = new Float32Array(count * 3)
+  for (let i = 0; i < count; i++) {
+    const nu = PATH_NU_MIN + ((PATH_NU_MAX - PATH_NU_MIN) * i) / (count - 1)
+    const [x, y, z] = eclipticFromTrueAnomaly(nu)
+    const scene = toSceneFromEcliptic(x, y, z, auInUnits)
+    const i3 = i * 3
+    out[i3] = scene[0]
+    out[i3 + 1] = scene[1]
+    out[i3 + 2] = scene[2]
+  }
+  return out
+}
 
-    for (let k = 0; k < count; k++) {
-      const seed = i * 31 + k * 17
-      const radius = spreadAu * Math.sqrt(hash(seed))
-      const angle = hash(seed + 3) * Math.PI * 2
-      const ox = (bx * Math.cos(angle) + nx * Math.sin(angle)) * radius
-      const oy = (by * Math.cos(angle) + ny * Math.sin(angle)) * radius
-      const oz = (bz * Math.cos(angle) + nz * Math.sin(angle)) * radius
-      const p = toSceneFromEcliptic(ex + ox, ey + oy, ez + oz, auInUnits)
-      points.push(p[0], p[1], p[2])
-    }
+function descendingNodeEcliptic(): Vec3 {
+  return eclipticFromTrueAnomaly(Math.PI - SWIFT_TUTTLE.peri)
+}
+
+export function createPerseidDustKit(): PerseidDustKit {
+  const pathEcl = new Float32Array(PERSEID_PATH_SAMPLES * 3)
+  writePathEcliptic(pathEcl)
+  const crossingEcl = descendingNodeEcliptic()
+
+  const u = new Float32Array(PERSEID_DUST_COUNT)
+  const offsetEcl = new Float32Array(PERSEID_DUST_COUNT * 3)
+  const ecl: [number, number, number] = [0, 0, 0]
+  const nodeU = (Math.PI - SWIFT_TUTTLE.peri - PATH_NU_MIN) / (PATH_NU_MAX - PATH_NU_MIN)
+  for (let k = 0; k < PERSEID_DUST_COUNT; k++) {
+    const nearEarth = hash(k * 3) < 0.38
+    const base = nearEarth ? nodeU - 0.07 + hash(k * 5) * 0.14 : hash(k * 7)
+    u[k] = base
+    samplePathEcl(pathEcl, base, ecl)
+    const r = Math.hypot(ecl[0], ecl[1], ecl[2])
+    const spread = r > 0.75 && r < 1.4 ? 0.09 : 0.045
+    const frame = pathFrame(pathEcl, base)
+    const radius = spread * Math.sqrt(hash(k * 11 + 2))
+    const angle = hash(k * 13 + 4) * Math.PI * 2
+    const cb = Math.cos(angle) * radius
+    const cn = Math.sin(angle) * radius
+    const i3 = k * 3
+    offsetEcl[i3] = frame.b[0] * cb + frame.n[0] * cn
+    offsetEcl[i3 + 1] = frame.b[1] * cb + frame.n[1] * cn
+    offsetEcl[i3 + 2] = frame.b[2] * cb + frame.n[2] * cn
   }
 
   return {
-    positions: new Float32Array(points),
-    crossingCenter:
-      crossingCount > 0
-        ? [crossingX / crossingCount, crossingY / crossingCount, crossingZ / crossingCount]
-        : [0, 0, 0],
+    pathEcl,
+    u,
+    offsetEcl,
+    crossingEcl,
   }
+}
+
+const dustScratch: [number, number, number] = [0, 0, 0]
+
+export function writePerseidDustScene(
+  out: Float32Array,
+  kit: PerseidDustKit,
+  dateMs: number,
+  auInUnits: number,
+): void {
+  const shift = dateMs / DUST_LAP_MS
+  for (let k = 0; k < kit.u.length; k++) {
+    samplePathEcl(kit.pathEcl, kit.u[k] + shift, dustScratch)
+    const i3 = k * 3
+    const scene = toSceneFromEcliptic(
+      dustScratch[0] + kit.offsetEcl[i3],
+      dustScratch[1] + kit.offsetEcl[i3 + 1],
+      dustScratch[2] + kit.offsetEcl[i3 + 2],
+      auInUnits,
+    )
+    out[i3] = scene[0]
+    out[i3 + 1] = scene[1]
+    out[i3 + 2] = scene[2]
+  }
+}
+
+export function perseidCrossingCenter(auInUnits: number): Vec3 {
+  const kit = crossingKitCache()
+  return toSceneFromEcliptic(kit.crossingEcl[0], kit.crossingEcl[1], kit.crossingEcl[2], auInUnits)
+}
+
+let cachedKit: PerseidDustKit | null = null
+function crossingKitCache(): PerseidDustKit {
+  if (!cachedKit) cachedKit = createPerseidDustKit()
+  return cachedKit
 }
 
 export function formatPerseidRange(start: Date, end: Date): string {

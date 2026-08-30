@@ -289,7 +289,7 @@ export function RotationAxisLine({
       new LineBasicMaterial({
         color: "#d7e4ff",
         transparent: true,
-        opacity: 0.85,
+        opacity: 0.425,
       }),
     [],
   );

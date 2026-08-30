@@ -52,7 +52,7 @@ export function planetRadiiMap(radii: BodyRadii): Record<PlanetId, number> {
 }
 
 export function skyRadiusForScale(auInUnits: number): number {
-  return auInUnits * 48
+  return auInUnits * 80
 }
 
 export function cameraFarForScale(auInUnits: number): number {

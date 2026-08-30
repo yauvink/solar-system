@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
+import { useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react'
 import { useFrame } from '@react-three/fiber'
 import {
   AdditiveBlending,
@@ -16,7 +16,7 @@ import {
   type Texture,
 } from 'three'
 import type { EphemerisStore } from '../astronomy/ephemerisStore.ts'
-import { BodyLabel, ScreenBillboardText } from './BodyLabel.tsx'
+import { BodyLabel, ScreenBillboardText, ShowBodyNamesContext } from './BodyLabel.tsx'
 import { createEarthTexture } from './createBodyTexture.ts'
 
 export type GeoLocation = {
@@ -274,6 +274,7 @@ function EarthCloudMaterial({
 }
 
 function YouAreHere({ lat, lon }: GeoLocation) {
+  const showNames = useContext(ShowBodyNamesContext)
   const { position, rotation } = useMemo(() => {
     const position = latLonOnSphere(lat, lon, 1.04)
     pinDir.copy(position).normalize()
@@ -303,9 +304,11 @@ function YouAreHere({ lat, lon }: GeoLocation) {
           blending={AdditiveBlending}
         />
       </mesh>
-      <group position={[0, 0.1, 0]}>
-        <ScreenBillboardText color="#f0c36a">You</ScreenBillboardText>
-      </group>
+      {showNames ? (
+        <group position={[0, 0.1, 0]}>
+          <ScreenBillboardText color="#f0c36a">You</ScreenBillboardText>
+        </group>
+      ) : null}
     </group>
   )
 }

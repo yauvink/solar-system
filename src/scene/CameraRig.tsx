@@ -3,11 +3,17 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { PerspectiveCamera, Quaternion, Vector3 } from "three";
 import { isMoonId, MOON_BY_ID, type BodyId } from "../astronomy/bodies.ts";
 import type { EphemerisStore } from "../astronomy/ephemerisStore.ts";
+import { perseidCrossingCenter, positionOfSwiftTuttle } from "../astronomy/perseids.ts";
 import { length } from "../astronomy/positions.ts";
 import type { BodyRadii } from "../astronomy/scale.ts";
 import { writeStartPose } from "./startPose.ts";
 
-export type FocusId = BodyId | "reset";
+export type StreamId = "swiftTuttle" | "perseids";
+export type FocusId = BodyId | "reset" | StreamId;
+
+export function isStreamId(id: string): id is StreamId {
+  return id === "swiftTuttle" || id === "perseids";
+}
 
 type CameraRigProps = {
   focus: FocusId;
@@ -72,6 +78,25 @@ function flyDuration(from: Vector3, to: Vector3): number {
   return Math.min(FLY_MAX, Math.max(FLY_MIN, 1.6 + Math.sqrt(dist) * 0.2));
 }
 
+function writeFocusPosition(focus: FocusId, store: EphemerisStore, out: Vector3) {
+  if (focus === "reset") {
+    out.set(0, 0, 0);
+    return;
+  }
+  if (focus === "swiftTuttle") {
+    const pos = positionOfSwiftTuttle(new Date(store.dateMs), store.auInUnits);
+    out.set(pos[0], pos[1], pos[2]);
+    return;
+  }
+  if (focus === "perseids") {
+    const pos = perseidCrossingCenter(store.auInUnits);
+    out.set(pos[0], pos[1], pos[2]);
+    return;
+  }
+  const pos = store.positions[focus];
+  out.set(pos[0], pos[1], pos[2]);
+}
+
 export function writeFocusPose(
   focus: FocusId,
   store: EphemerisStore,
@@ -85,6 +110,30 @@ export function writeFocusPose(
     const reach = Math.max(length(positions.saturn), store.auInUnits * 8);
     targetOut.set(0, 0, 0);
     cameraOut.set(reach * 0.62, reach * 0.38, reach * 0.62);
+    return;
+  }
+
+  writeFocusPosition(focus, store, targetOut);
+
+  if (isStreamId(focus)) {
+    const r = targetOut.length() || 1;
+    if (focus === "perseids") {
+      const stand = Math.max(store.auInUnits * 0.42, 8);
+      cameraOut.set(
+        targetOut.x + stand * 0.55,
+        targetOut.y + stand * 0.38,
+        targetOut.z + stand * 0.72,
+      );
+      return;
+    }
+    const stand = Math.max(r * 0.08, store.auInUnits * 0.35, 5);
+    const px = -targetOut.z / r;
+    const pz = targetOut.x / r;
+    cameraOut.set(
+      targetOut.x + px * stand * 0.92 + (targetOut.x / r) * stand * 0.18,
+      targetOut.y + stand * 0.28,
+      targetOut.z + pz * stand * 0.92 + (targetOut.z / r) * stand * 0.18,
+    );
     return;
   }
 
@@ -145,12 +194,7 @@ function writeBodyPoint(
   fallback: Vector3,
   out: Vector3,
 ) {
-  if (focus === "reset") {
-    out.set(0, 0, 0);
-    return;
-  }
-  const pos = store.positions[focus];
-  out.set(pos[0], pos[1], pos[2]);
+  writeFocusPosition(focus, store, out);
   if (out.lengthSq() === 0 && fallback.lengthSq() > 0) out.copy(fallback);
 }
 
@@ -252,11 +296,7 @@ export function CameraRig({
     };
     const resume = () => {
       if (focus === "reset") return;
-      bodyPos.set(
-        store.positions[focus][0],
-        store.positions[focus][1],
-        store.positions[focus][2],
-      );
+      writeFocusPosition(focus, store, bodyPos);
       offset.copy(camera.position).sub(bodyPos);
       following.current = true;
     };
@@ -283,11 +323,7 @@ export function CameraRig({
       }
       controls.update();
       if (focus !== "reset") {
-        bodyPos.set(
-          store.positions[focus][0],
-          store.positions[focus][1],
-          store.positions[focus][2],
-        );
+        writeFocusPosition(focus, store, bodyPos);
         offset.copy(camera.position).sub(bodyPos);
       }
       following.current = true;
@@ -348,11 +384,7 @@ export function CameraRig({
       if (u >= 1) {
         animating.current = false;
         if (focus !== "reset") {
-          bodyPos.set(
-            store.positions[focus][0],
-            store.positions[focus][1],
-            store.positions[focus][2],
-          );
+          writeFocusPosition(focus, store, bodyPos);
           offset.copy(camera.position).sub(bodyPos);
         }
         controls.update();
@@ -362,11 +394,7 @@ export function CameraRig({
 
     if (focus === "reset" || !following.current) return;
 
-    bodyPos.set(
-      store.positions[focus][0],
-      store.positions[focus][1],
-      store.positions[focus][2],
-    );
+    writeFocusPosition(focus, store, bodyPos);
     controls.target.copy(bodyPos);
     camera.position.copy(bodyPos).add(offset);
     controls.update();
